@@ -35,3 +35,15 @@
 - **[Validation Firewall]** Implemented a rigorous custom input cleaner (`handlePhoneChange`) that mathematically strips all non-numeric characters, automatically injects a whitespace gap after 5 digits, and enforces a strict 11-character maximum limit to prevent database type-errors.
 - **[Navigation]** Bound the `index.tsx` "get started" button to the Expo Router, seamlessly transitioning users into the new `/login` route.
 - **[Design Polish]** Refined the UI to pixel-perfection: slimmed down the input pills, fixed typography hierarchies, and applied rigorous fixed-width constraints (`width: 220`) to definitively intercept React Native flexbox stretching across wide device screens.
+
+---
+
+# *Chronological record of the v0.3.0-alpha minor update cycle*
+
+## Session 4: OTP Verification UI
+*Goal: Build a robust, bug-free OTP entry screen and finalize the authentication flow.*
+
+- **[UI/UX]** Engineered `verification.tsx` with a custom 6-slot OTP design matching the sketches, complete with cyan active underlines and dark gray 'X' empty states.
+- **[Architecture]** Overcame native mobile keyboard focus limitations by implementing a "hidden input" architecture. A single, invisible `<TextInput>` handles all keystrokes and auto-focuses while dynamically updating the 6 visually independent React Native UI slots.
+- **[Navigation]** Configured `useLocalSearchParams` to securely extract the `phoneNumber` parameter passed down from the `/login` route.
+- **[Backend Integration]** Hooked up the `handleVerification` function to trigger a `POST` request to the backend's `/api/auth/verify-otp` mock endpoint, completing the end-to-end authentication cycle.
