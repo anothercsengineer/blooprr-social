@@ -8,6 +8,7 @@ import { router, useLocalSearchParams, Stack } from 'expo-router';
 
 export default function VerifyScreen() {
     const { phone } = useLocalSearchParams(); // captures the phone number from previous page
+    const safePhone = `+${phone?.toString().replace(/\D/g, '')}`; // glues the '+' back on the numbers
     const [otp, setOtp] = useState('');
     const OTP_LENGTH = 6;
 
@@ -24,7 +25,7 @@ export default function VerifyScreen() {
             const response = await fetch(`${backendUrl}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, otp: otp }),
+                body: JSON.stringify({ phone: safePhone, otp: otp }),
             });
 
             if (response.ok) {
