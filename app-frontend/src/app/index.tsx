@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 export default function OnboardingScreen() {
   const handleInitialize = () => {
     console.log("Initialize button pressed!");
+    router.push('/login');
   };
 
   return (
@@ -58,11 +59,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 80,
     backgroundColor: '#00DCCA',
-    paddingVertical: 18,
-    paddingHorizontal: 80,
+    paddingVertical: 14,
     borderRadius: 30,
-    width: '85%',
+    width: 280,
     alignItems: 'center',
+    alignSelf: 'center',
     boxShadow: '0px 0px 20px 2px rgba(0, 229, 255, 0.6)',
   },
   buttonText: {
