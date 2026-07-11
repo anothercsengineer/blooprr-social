@@ -22,3 +22,16 @@
 - **[Styling Polish]** Encountered the Android `elevation` directional shadow limitation. Replaced legacy shadow properties with the modern React Native 0.74+ CSS `boxShadow` property to generate a perfect, uniform cyan glow around the call-to-action button.
 - **[Cleanup]** Deleted non-essential template boilerplate (`explore.tsx`, `app-tabs.tsx`) to maintain a pristine codebase.
 - **[Version Control]** Hardened the `.gitignore` files to definitively block `.env` secrets and local SQLite databases from leaking. Cleaned up nested Git repositories, initialized root version control, and locked in the timeline with the `v0.1.0-alpha` tag.
+
+---
+
+# *Chronological record of the v0.2.0-alpha minor update cycle*
+
+## Session 3: Phone Authentication UI
+*Goal: Build a dynamic, interactive login screen connected to the mock backend.*
+
+- **[UI/UX]** Engineered `login.tsx` with a sleek dark-mode layout matching the sketch proportions, including a custom pill-shaped input and checkbox.
+- **[State Management]** Built dynamic React states (`phoneNumber`, `agreed`) that automatically toggle the active/inactive UI state of the primary "proceed" button.
+- **[Validation Firewall]** Implemented a rigorous custom input cleaner (`handlePhoneChange`) that mathematically strips all non-numeric characters, automatically injects a whitespace gap after 5 digits, and enforces a strict 11-character maximum limit to prevent database type-errors.
+- **[Navigation]** Bound the `index.tsx` "get started" button to the Expo Router, seamlessly transitioning users into the new `/login` route.
+- **[Design Polish]** Refined the UI to pixel-perfection: slimmed down the input pills, fixed typography hierarchies, and applied rigorous fixed-width constraints (`width: 220`) to definitively intercept React Native flexbox stretching across wide device screens.
