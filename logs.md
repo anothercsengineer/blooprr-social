@@ -47,3 +47,13 @@
 - **[Architecture]** Overcame native mobile keyboard focus limitations by implementing a "hidden input" architecture. A single, invisible `<TextInput>` handles all keystrokes and auto-focuses while dynamically updating the 6 visually independent React Native UI slots.
 - **[Navigation]** Configured `useLocalSearchParams` to securely extract the `phoneNumber` parameter passed down from the `/login` route.
 - **[Backend Integration]** Hooked up the `handleVerification` function to trigger a `POST` request to the backend's `/api/auth/verify-otp` mock endpoint, completing the end-to-end authentication cycle.
+
+---
+
+# *Chronological record of the v0.3.1-alpha patch update cycle*
+
+## Session 5: URL-Encoding Bug Fix
+*Goal: Resolve a phone payload serialization bug caused by Expo Router parameter passing.*
+
+- **[Hotfix]** Patched `verification.tsx` to handle an Expo Router `useLocalSearchParams` bug that was stripping or improperly encoding the `+` sign in the `phoneNumber` parameter.
+- **[Validation Firewall]** Engineered a robust `safePhone` variable that strips all non-numeric characters from the incoming route parameter and dynamically re-attaches the `+` prefix before making the API request, ensuring a perfectly clean string is sent to the backend.
