@@ -57,3 +57,19 @@
 
 - **[Hotfix]** Patched `verification.tsx` to handle an Expo Router `useLocalSearchParams` bug that was stripping or improperly encoding the `+` sign in the `phoneNumber` parameter.
 - **[Validation Firewall]** Engineered a robust `safePhone` variable that strips all non-numeric characters from the incoming route parameter and dynamically re-attaches the `+` prefix before making the API request, ensuring a perfectly clean string is sent to the backend.
+
+---
+
+# *Chronological record of the v0.3.2-alpha patch update cycle*
+
+## Session 6: Codebase Security & UX Audit Resolution
+*Goal: Patch all critical and high-severity vulnerabilities identified during the full-stack system audit.*
+
+- **[Hotfix]** Resolved a critical syntax error (stray `]`) in the SQL template literal inside `contacts.js` that was instantly crashing the `/sync` endpoint.
+- **[Hotfix]** Fixed a fatal table name mismatch (`contact_edges` vs `edges`) across `db.js` and `contacts.js` to restore database integrity for contact syncing. Changed the name of the table to `mutuals` and unified it across the backend files.
+- **[Backend Security]** Implemented a rigorous 5-minute TTL and 5-attempt brute-force lockout mechanism on the OTP store, securing the authentication endpoint against automated guessing attacks.
+- **[Backend Security]** Replaced predictable `Math.random()` usage with mathematically secure `crypto.randomInt()` for OTP generation.
+- **[Data Privacy]** Modified the `/verify-otp` SQL query to exclusively return non-sensitive profile columns, definitively intercepting `phone_hash` leaks in API responses.
+- **[DDoS Protection]** Hardened the Express server by adding a 1MB payload size limit on JSON bodies and explicitly capping the `/sync` endpoint contact array at 5,000 entries to prevent SQLite memory crashes.
+- **[Input Validation]** Applied strict E.164 Regex validation on all incoming phone numbers to block injection variants and malformed data entries.
+- **[Cross-Platform Routing]** Re-architected frontend API routing by extracting hardcoded Android Emulator IPs (`10.0.2.2`) and centralizing network logic into a dynamic `constants/config.ts` environment file, unlocking physical device and iOS testing capabilities.
