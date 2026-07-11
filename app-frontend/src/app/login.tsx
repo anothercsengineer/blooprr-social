@@ -30,20 +30,20 @@ export default function LoginScreen() {
 
         // backend talking
         try {
-            const backendUrl = 'http://localhost:3001';
+            const backendUrl = 'http://10.0.2.2:3001';
 
             const response = await fetch(`${backendUrl}/api/auth/request-otp`, {
                 method: 'POST',
-                headers: { 'Content_Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: `+91${cleanNumber}` }), // format with the country code
             });
 
             if (response.ok) {
                 console.log("OTP requested successfully! Check backend terminal for mock code.");
-                // will integrate OTP screen navigation later
-                // router.push({ pathname: '/verify', params: { phone: `+91${cleanNumber}` } });
+                router.push({ pathname: '/verification', params: { phone: `+91${cleanNumber}` } });
             } else {
-                console.error("Backend refused the request.");
+                const errorData = await response.text();
+                console.error("Backend refused with status ${response.status}. Error:", errorData);
             }
         } catch (error) {
             console.error("Could not connect to backend!", error);
