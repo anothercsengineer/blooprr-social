@@ -5,6 +5,7 @@ import {
     Platform, Image, Pressable
 } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
+import { BACKEND_URL } from "@/constants/config";
 
 export default function VerifyScreen() {
     const { phone } = useLocalSearchParams(); // captures the phone number from previous page
@@ -22,7 +23,7 @@ export default function VerifyScreen() {
         try {
             const backendUrl = 'http://10.0.2.2:3001';
 
-            const response = await fetch(`${backendUrl}/api/auth/verify-otp`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: safePhone, otp: otp }),

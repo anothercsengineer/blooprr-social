@@ -39,9 +39,9 @@ db.serialize(() => {
         )
     `);
 
-    // 2.5 contact edges
+    // 2.5 contact mutuals
     db.run(`
-        CREATE TABLE IF NOT EXISTS edges (
+        CREATE TABLE IF NOT EXISTS mutuals (
             owner_id INTEGER NOT NULL,
             contact_phone_hash TEXT NOT NULL,
             PRIMARY KEY (owner_id, contact_phone_hash),

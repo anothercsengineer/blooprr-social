@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Alert } fr
 import * as Contacts from 'expo-contacts';
 import * as Crypto from 'expo-crypto';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { BACKEND_URL } from '../constants/config';
 
 export default function SyncContactsScreen() {
   const router = useRouter();
@@ -10,7 +11,6 @@ export default function SyncContactsScreen() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Waiting for permission...');
 
-  const backendUrl = 'http://10.0.2.2:3001';
   const pepper = 'default-blooprr-pepper'; // Must match backend exactly
 
   const hashPhoneNumber = async (phone: string) => {
@@ -62,7 +62,7 @@ export default function SyncContactsScreen() {
 
       setStatus('Syncing with Blooprr servers...');
       try {
-        const response = await fetch(`${backendUrl}/api/contacts/sync`, {
+        const response = await fetch(`${BACKEND_URL}/api/contacts/sync`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 

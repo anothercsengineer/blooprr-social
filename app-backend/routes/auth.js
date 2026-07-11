@@ -15,13 +15,23 @@ const hashPhoneNumber = (phone) => {
 router.post('/request-otp', (req, res) => {
     const { phone } = req.body;
 
-    if (!phone) {
+    if (!phone || typeof phone !== 'string') {
         return res.status(400).json({ error: 'Phone number is required!' });
     }
 
+    // E.164 format validation
+    const phoneRegex = /^\+\d{10,15}$/;
+    if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ error: 'Invalid phone number format. Use E.164 format (e.g. +919876543210)' });
+    }
+
     // generate fake otp
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    mockOtpStore[phone] = otp;
+    const otp = crypto.randomInt(100000, 999999).toString();
+    mockOtpStore[phone] = {
+        otp: otp,
+        expiresAt: Date.now() + (5 * 60 * 1000), // expires in 5 minutes
+        attempts: 0
+    };
 
     console.log(`[MOCK SMS] Sent OTP ${otp} to phone ${phone}`);
 
@@ -37,13 +47,34 @@ router.post('/verify-otp', (req, res) => {
     }
 
     if (mockOtpStore[phone] === otp) {
+        const record = mockOtpStore[phone];
+
+        if (!record) {
+            return res.status(400).json({ error: 'No OTP requested for this number!' });
+        }
+
+        if (Date.now() > record.expiresAt) {
+            delete mockOtpStore[phone];
+            return res.status(400).json({ error: 'OTP has expired!'})
+        }
+
+        if (record.attempts >= 5) {
+            delete mockOtpStore[phone];
+            return res.status(429).json({ error: 'Too many failed attempts! Request a new OTP.'});
+        }
+
+        if (record.otp !== otp) {
+            record.attempts += 1;
+            return res.status(400).json({ error: 'Invalid OTP!' });
+        }
+        
         // if otp matches, its cleared from the memory
         delete mockOtpStore[phone];
 
         const phoneHash = hashPhoneNumber(phone);
 
         // checking if user exists in database
-        db.get('SELECT * FROM profiles WHERE phone_hash = ?', [phoneHash], (err, user) => {
+        db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [phoneHash], (err, user) => {
             if (err) return res.status(500).json({ error: 'Database error!' });
 
             if (user) {

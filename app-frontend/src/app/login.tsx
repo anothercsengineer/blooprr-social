@@ -5,6 +5,7 @@ import {
     Platform, Image
 } from 'react-native';
 import { router, Stack } from 'expo-router';
+import { BACKEND_URL } from '../constants/config';
 
 export default function LoginScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -30,9 +31,7 @@ export default function LoginScreen() {
 
         // backend talking
         try {
-            const backendUrl = 'http://10.0.2.2:3001';
-
-            const response = await fetch(`${backendUrl}/api/auth/request-otp`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/request-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: `+91${cleanNumber}` }), // format with the country code

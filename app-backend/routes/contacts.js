@@ -10,8 +10,12 @@ router.post('/sync', (req, res) => {
         return res.status(400).json({ error: 'profileId and contactHashes array are required' });
     }
 
+    if (contactHashes.length > 500) {
+        return res.status(413).json({ error: 'Payload too large. Maximum 500 contacts allowed per sync.' });
+    }
+
     // 1. saving all the contacts user has uploaded (synced with the app)
-    const insertEdge = db.prepare('INSERT OR IGNORE INTO contact_edges (owner_id, contact_phone_hash) VALUES (?, ?)');
+    const insertEdge = db.prepare('INSERT OR IGNORE INTO mutuals (owner_id, contact_phone_hash) VALUES (?, ?)');
     contactHashes.forEach(hash => {
         insertEdge.run(profileId, hash);
     });
@@ -23,14 +27,14 @@ router.post('/sync', (req, res) => {
 
         const myPhoneHash = user.phone_hash;
 
-        // finding users who: have an account, are in the contact list uploaded and also have the users phone number in their contact edges
+        // finding users who: have an account, are in the contact list uploaded and also have the mutual users phone number
         const placeholders = contactHashes.map(() => '?').join(',');
         const query = `
             SELECT profiles.id
             FROM profiles
-            JOIN contact_edges ON profiles.id = contact_edges.owner_id
+            JOIN mutuals ON profiles.id = mutuals.owner_id
             WHERE profiles.phone_hash IN (${placeholders})
-            AND contact_edges.contact_phone_hash = ?
+            AND mutuals.contact_phone_hash = ?
         `;
 
         // query parameters are all the hash phone numbers the user uploaded and also their own at the end
@@ -42,7 +46,7 @@ router.post('/sync', (req, res) => {
             const newConnections = [];
 
             // 3. creating mutual connections in the db
-            const insertConnection = db.prepare(`]
+            const insertConnection = db.prepare(`
                 INSERT OR IGNORE INTO connections (profile_id_1, profile_id_2)
                 VALUES (?, ?)
             `);
