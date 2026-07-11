@@ -1,0 +1,36 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# --- GLOBAL IMPORTS ---
+node_modules/
+.env
+.env*.local
+.DS_Store
+*.pem
+
+# --- DEBUG LOGS ---
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# --- BACKEND ---
+blooprr.db
+*.db
+
+# --- FRONTEND (EXPO) ---
+.expo/                                                                           
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+
+# --- NATIVE ---
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/app-frontend/ios/
+/app-frontend/android/
