@@ -42,7 +42,7 @@ export default function LoginScreen() {
                 router.push({ pathname: '/verification', params: { phone: `+91${cleanNumber}` } });
             } else {
                 const errorData = await response.text();
-                console.error("Backend refused with status ${response.status}. Error:", errorData);
+                console.error(`Backend refused with status ${response.status}. Error:`, errorData);
             }
         } catch (error) {
             console.error("Could not connect to backend!", error);

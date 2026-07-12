@@ -8,12 +8,21 @@ const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
 router.post('/sync', (req, res) => {
     const { profileId, contactHashes } = req.body;
 
-    if (!profileId || !Array.isArray(contactHashes)) {
-        return res.status(400).json({ error: 'profileId and contactHashes array are required' });
+    // clean integer validation
+    const parsedProfileId = parseInt(profileId, 10);
+    if (!parsedProfileId || isNaN(parsedProfileId) || !Array.isArray(contactHashes)) {
+        return res.status(400).json({ error: 'Valid profileId and contactHashes array are required' });
     }
 
+    // payload size validation
     if (contactHashes.length > 500) {
         return res.status(413).json({ error: 'Payload too large. Maximum 500 contacts allowed per sync.' });
+    }
+
+    // strict hex-string validation
+    const isValidHash = (str) => typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
+    if (!contactHashes.every(isValidHash)) {
+        return res.status(400).json({ error: 'Invalid payload: All contact hashes must be valid SHA256 hex strings.' });
     }
 
     // double-hash application
@@ -24,12 +33,12 @@ router.post('/sync', (req, res) => {
     // 1. saving all the contacts user has uploaded (synced with the app)
     const insertEdge = db.prepare('INSERT OR IGNORE INTO mutuals (owner_id, contact_phone_hash) VALUES (?, ?)');
     secureContactHashes.forEach(hash => {
-        insertEdge.run(profileId, hash);
+        insertEdge.run(parsedProfileId, hash);
     });
     insertEdge.finalize();
 
     // 2. finding mutual connections
-    db.get('SELECT phone_hash FROM profiles WHERE id = ?', [profileId], (err, user) => {
+    db.get('SELECT phone_hash FROM profiles WHERE id = ?', [parsedProfileId], (err, user) => {
         if (err || !user) return res.status(500).json({ error: 'Could not fetch user profile' });
 
         const myPhoneHash = user.phone_hash;
@@ -59,8 +68,8 @@ router.post('/sync', (req, res) => {
             `);
 
             mutualProfiles.forEach(mutual => {
-                const id1 = Math.min(profileId, mutual.id);
-                const id2 = Math.max(profileId, mutual.id);
+                const id1 = Math.min(parsedProfileId, mutual.id);
+                const id2 = Math.max(parsedProfileId, mutual.id);
                                                                                     
                 insertConnection.run(id1, id2);
                 newConnections.push(mutual.id);

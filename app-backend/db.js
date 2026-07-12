@@ -13,6 +13,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // initialize tables
 db.serialize(() => {
+    // configuration for performance & constraints
+    db.run('PRAGMA busy_timeout = 5000;');
+    db.run('PRAGMA foreign_keys = ON;');
+
     // 1. users table
     db.run(`
         CREATE TABLE IF NOT EXISTS profiles (
@@ -74,6 +78,11 @@ db.serialize(() => {
             FOREIGN KEY(profile_id) REFERENCES profiles(id)
         )
     `);
+
+    // indexes for fast querying
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bloops_profile_id ON bloops(profile_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_mutuals_contact_hash ON mutuals(contact_phone_hash)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_engagements_bloop_id ON engagements(bloop_id)`);
 
     console.log('Database tables initialized!');
 });
