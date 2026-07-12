@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const crypto = require('crypto');
+const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
 
 // sync contacts endpoint
 router.post('/sync', (req, res) => {
@@ -14,9 +16,14 @@ router.post('/sync', (req, res) => {
         return res.status(413).json({ error: 'Payload too large. Maximum 500 contacts allowed per sync.' });
     }
 
+    // double-hash application
+    const secureContactHashes = contactHashes.map(clientHash =>
+        crypto.createHash('sha256').update(clientHash + pepper).digest('hex')
+    );
+
     // 1. saving all the contacts user has uploaded (synced with the app)
     const insertEdge = db.prepare('INSERT OR IGNORE INTO mutuals (owner_id, contact_phone_hash) VALUES (?, ?)');
-    contactHashes.forEach(hash => {
+    secureContactHashes.forEach(hash => {
         insertEdge.run(profileId, hash);
     });
     insertEdge.finalize();
@@ -28,7 +35,7 @@ router.post('/sync', (req, res) => {
         const myPhoneHash = user.phone_hash;
 
         // finding users who: have an account, are in the contact list uploaded and also have the mutual users phone number
-        const placeholders = contactHashes.map(() => '?').join(',');
+        const placeholders = secureContactHashes.map(() => '?').join(',');
         const query = `
             SELECT profiles.id
             FROM profiles
@@ -38,7 +45,7 @@ router.post('/sync', (req, res) => {
         `;
 
         // query parameters are all the hash phone numbers the user uploaded and also their own at the end
-        const params = [...contactHashes, myPhoneHash];
+        const params = [...secureContactHashes, myPhoneHash];
         
         db.all(query, params, (err, mutualProfiles) => {
             if (err) return res.status(500).json({ error: 'Error finding mutuals' });

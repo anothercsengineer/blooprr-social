@@ -8,7 +8,9 @@ const mockOtpStore = {};
 
 const hashPhoneNumber = (phone) => {
     const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
-    return crypto.createHash('sha256').update(phone + pepper).digest('hex');
+    const cleaned = phone.replace(/\D/g, '');
+    const clientHash = crypto.createHash('sha256').update(cleaned).digest('hex');
+    return crypto.createHash('sha256').update(clientHash + pepper).digest('hex');
 }
 
 // 1. otp request endpoint
@@ -46,53 +48,49 @@ router.post('/verify-otp', (req, res) => {
         return res.status(400).json({ error: 'Phone number and OTP are required!' });
     }
 
-    if (mockOtpStore[phone] === otp) {
-        const record = mockOtpStore[phone];
+    const record = mockOtpStore[phone];
 
-        if (!record) {
-            return res.status(400).json({ error: 'No OTP requested for this number!' });
-        }
-
-        if (Date.now() > record.expiresAt) {
-            delete mockOtpStore[phone];
-            return res.status(400).json({ error: 'OTP has expired!'})
-        }
-
-        if (record.attempts >= 5) {
-            delete mockOtpStore[phone];
-            return res.status(429).json({ error: 'Too many failed attempts! Request a new OTP.'});
-        }
-
-        if (record.otp !== otp) {
-            record.attempts += 1;
-            return res.status(400).json({ error: 'Invalid OTP!' });
-        }
-        
-        // if otp matches, its cleared from the memory
-        delete mockOtpStore[phone];
-
-        const phoneHash = hashPhoneNumber(phone);
-
-        // checking if user exists in database
-        db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [phoneHash], (err, user) => {
-            if (err) return res.status(500).json({ error: 'Database error!' });
-
-            if (user) {
-                // user exists - log in
-                return res.json({ message: 'Login successful', user, isNewUser: false }); // NOTE: will have to add JWT later
-            } else {
-                // new user - sign up
-                db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
-                    if (insertErr) return res.status(500).json({ error: 'Could not create user!' });
-
-                    const newUser = { id: this.lastID, phone_hash: phoneHash, bio: '', profile_pic_url: null };
-                    return res.json({ message: 'Sign-up successful!', user: newUser, isNewUser: true });
-                });
-            }
-        });
-    } else {
-        res.status(401).json({ error: 'Invalid OTP' });
+    if (!record) {
+        return res.status(400).json({ error: 'No OTP requested for this number!' });
     }
+
+    if (Date.now() > record.expiresAt) {
+        delete mockOtpStore[phone];
+        return res.status(400).json({ error: 'OTP has expired!'})
+    }
+
+    if (record.attempts >= 5) {
+        delete mockOtpStore[phone];
+        return res.status(429).json({ error: 'Too many failed attempts! Request a new OTP.'});
+    }
+
+    if (record.otp !== otp) {
+        record.attempts += 1;
+        return res.status(400).json({ error: 'Invalid OTP!' });
+    }
+        
+    // if otp matches, its cleared from the memory
+    delete mockOtpStore[phone];
+
+    const phoneHash = hashPhoneNumber(phone);
+
+    // checking if user exists in database
+    db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [phoneHash], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Database error!' });
+
+        if (user) {
+            // user exists - log in
+            return res.json({ message: 'Login successful', user, isNewUser: false }); // NOTE: will have to add JWT later
+        } else {
+            // new user - sign up
+            db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
+                if (insertErr) return res.status(500).json({ error: 'Could not create user!' });
+
+                const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
+                return res.json({ message: 'Sign-up successful!', user: newUser, isNewUser: true });
+            });
+        }
+    });
 });
 
 module.exports = router;
