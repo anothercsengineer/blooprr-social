@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken')
 
 // NOTE: will have to add redis later to temporarily store OTPs
 const mockOtpStore = {};
@@ -82,15 +83,17 @@ router.post('/verify-otp', (req, res) => {
         if (err) return res.status(500).json({ error: 'Database error!' });
 
         if (user) {
-            // user exists - log in
-            return res.json({ message: 'Login successful', user, isNewUser: false }); // NOTE: will have to add JWT later
+            // user exists - generate token and log in
+            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+            return res.json({ message: 'Login successful', user, token, isNewUser: false });
         } else {
             // new user - sign up
             db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
                 if (insertErr) return res.status(500).json({ error: 'Could not create user!' });
 
                 const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
-                return res.json({ message: 'Sign-up successful!', user: newUser, isNewUser: true });
+                const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+                return res.json({ message: 'Sign-up successful!', user: newUser, token, isNewUser: true });
             });
         }
     });

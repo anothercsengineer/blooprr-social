@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
+const authenticateToken = require('../middleware/jwt');
 const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
 
 // sync contacts endpoint
-router.post('/sync', (req, res) => {
-    const { profileId, contactHashes } = req.body;
+router.post('/sync', authenticateToken, (req, res) => {
+    const { contactHashes } = req.body;
+    const profileId = req.user.id;
 
     // clean integer validation
     const parsedProfileId = parseInt(profileId, 10);
