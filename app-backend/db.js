@@ -34,6 +34,28 @@ db.serialize(() => {
         )
     `);
 
+    // invite codes table
+    db.run(`
+        CREATE TABLE IF NOT EXISTS blipkeys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT UNIQUE NOT NULL,
+            bearer INTEGER, -- profile_id of the user who received the blip key (NULL for Genesis keys)
+            redeemer_hash TEXT, -- phone hash of the person claiming it (NULL until claimed)
+            status BOOLEAN DEFAULT 0, -- flips to 1 ONLY after a successful OTP verification
+            expiry DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(bearer) REFERENCES profiles(id)
+        )
+    `);
+
+    // daily metrics tracker
+    db.run(`
+        CREATE TABLE IF NOT EXISTS daily_metrics (
+            date_string TEXT PRIMARY KEY, -- Format: 'YYYY-MM-DD'
+            sms_count INTEGER DEFAULT 0
+        )
+    `);
+
     // 2. bloops table
     db.run(`
         CREATE TABLE IF NOT EXISTS bloops (
@@ -89,6 +111,8 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_bloops_profile_id ON bloops(profile_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_mutuals_contact_hash ON mutuals(contact_phone_hash)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_engagements_bloop_id ON engagements(bloop_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_blipkeys_key ON blipkeys(key)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_blipkeys_redeemer ON blipkeys(redeemer_hash)`);
 
     console.log('Database tables initialized!');
 });

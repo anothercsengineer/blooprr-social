@@ -37,12 +37,18 @@ export default function LoginScreen() {
                 body: JSON.stringify({ phone: `+91${cleanNumber}` }), // format with the country code
             });
 
+            const data = await response.json();
+
             if (response.ok) {
                 console.log("OTP requested successfully! Check backend terminal for mock code.");
                 router.push({ pathname: '/verification', params: { phone: `+91${cleanNumber}` } });
             } else {
-                const errorData = await response.text();
-                console.error(`Backend refused with status ${response.status}. Error:`, errorData);
+                // catches missing-blipkey error
+                if (response.status === 400 && data.error === 'A blipkey (invite code) is required to sign up.') {
+                    router.push({ pathname: '/blipkey', params: { phone: `+91${cleanNumber}` } });
+                } else {
+                    console.error(`Backend refused with status ${response.status}. Error:`, data.error);
+                }
             }
         } catch (error) {
             console.error("Could not connect to backend!", error);
