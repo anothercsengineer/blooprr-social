@@ -35,7 +35,10 @@ router.post('/request-otp', (req, res) => {
         attempts: 0
     };
 
-    console.log(`[MOCK SMS] Sent OTP ${otp} to phone ${phone}`);
+    // only prints the otp to console in local dev
+    if (process.env.NODE_ENV != 'production') {
+        console.log(`[DEV ONLY SMS] Sent OTP ${otp} to phone ${phone}`);
+    }
 
     res.json({ message: 'OTP sent successfully (check backend console)' });
 });

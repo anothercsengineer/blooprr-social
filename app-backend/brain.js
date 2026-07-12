@@ -7,7 +7,20 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // middleware
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:3000',
+    'http://10.0.2.2:8081'
+]
+app.use(cors({
+    origin: function(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS!'));
+        }
+    }
+}));
 app.use(express.json({ limit: '1mb' }));
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
