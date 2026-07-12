@@ -73,3 +73,16 @@
 - **[DDoS Protection]** Hardened the Express server by adding a 1MB payload size limit on JSON bodies and explicitly capping the `/sync` endpoint contact array at 5,000 entries to prevent SQLite memory crashes.
 - **[Input Validation]** Applied strict E.164 Regex validation on all incoming phone numbers to block injection variants and malformed data entries.
 - **[Cross-Platform Routing]** Re-architected frontend API routing by extracting hardcoded Android Emulator IPs (`10.0.2.2`) and centralizing network logic into a dynamic `constants/config.ts` environment file, unlocking physical device and iOS testing capabilities.
+
+---
+
+# *Chronological record of the v0.3.3-alpha patch cycle*
+
+## Session 7: Zero-Knowledge Cryptography & Network Hardening
+*Goal: Finalize the security audit by eliminating client-side secrets and locking down network exposures.*
+
+- **[Cryptography]** Engineered a Double-Hash Architecture (SHA-256 client hashing + SHA-256 server peppering) to definitively remove the secret cryptographic pepper from the frontend codebase.
+- **[Backend Security]** Rewrote the `hashPhoneNumber` utility to strictly sanitize incoming phone numbers (stripping non-digits) to guarantee hash matching between client and server.
+- **[Logic Hotfix]** Resolved a critical scoping bug in `auth.js` that was trapping the OTP verification logic inside an obsolete comparison block.
+- **[Data Privacy]** Hardened the new user sign-up response to prevent `phone_hash` leaks.
+- **[Database Integrity]** Configured the `/sync` endpoint to intercept incoming client hashes and mathematically apply the server-side pepper via a `.map()` function prior to any database querying.
