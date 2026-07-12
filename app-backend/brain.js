@@ -21,9 +21,22 @@ app.use(cors({
         }
     }
 }));
+
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+app.use(helmet());
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Too many requests from this IP, please try again later.' }
+});
+app.use('/api/', limiter);
+
 app.use(express.json({ limit: '1mb' }));
+
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
+
 const contactsRoutes = require('./routes/contacts');
 app.use('/api/contacts', contactsRoutes);
 
@@ -35,4 +48,17 @@ app.get('/', (req, res) => {
 // server start
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+// optimised shut down for the SQLite database when server is killed
+process.on('SIGINT', () => {
+    console.log('\nClosing SQLite database connection...');
+    db.close((err) => {
+        if (err) {
+            console.error('Error closing database:', err.message);
+        } else {
+            console.log('Database closed successfully.');
+        }
+        process.exit(0);
+    });
 });

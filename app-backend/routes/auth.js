@@ -28,11 +28,19 @@ router.post('/request-otp', (req, res) => {
         return res.status(400).json({ error: 'Invalid phone number format. Use E.164 format (e.g. +919876543210)' });
     }
 
+    // toll fraud protection
+    const existingRecord = mockOtpStore[phone];
+    if (existingRecord && Date.now() < existingRecord.requestedAt + (45 * 1000)) {
+        const timeLeft = Math.ceil(((existingRecord.requestedAt + 45000) - Date.now()) / 1000);
+        return res.status(429).json({ error: `Please wait ${timeLeft} seconds before requesting another OTP.` });
+    }
+
     // generate fake otp
     const otp = crypto.randomInt(100000, 999999).toString();
     mockOtpStore[phone] = {
         otp: otp,
         expiresAt: Date.now() + (5 * 60 * 1000), // expires in 5 minutes
+        requestedAt: Date.now(), // tracks the cooldown
         attempts: 0
     };
 
@@ -98,5 +106,15 @@ router.post('/verify-otp', (req, res) => {
         }
     });
 });
+
+// garbage collector
+setInterval(() => {
+    const now = Date.now();
+    for (const phone in mockOtpStore) {
+        if (now > mockOtpStore[phone].expiresAt) {
+            delete mockOtpStore[phone];
+        }
+    }
+}, 10 * 60 * 1000);
 
 module.exports = router;

@@ -21,6 +21,15 @@ router.post('/sync', authenticateToken, (req, res) => {
         return res.status(413).json({ error: 'Payload too large. Maximum 500 contacts allowed per sync.' });
     }
 
+    // SQL syntax crash prevention if 0 contacts are uploaded
+    if (contactHashes.length === 0) {
+        return res.json({ 
+            message: 'No contacts provided to sync.',
+            mutualConnectionsFound: 0,
+            connectedProfileIds: []
+        });
+    }
+
     // strict hex-string validation
     const isValidHash = (str) => typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
     if (!contactHashes.every(isValidHash)) {
@@ -34,10 +43,16 @@ router.post('/sync', authenticateToken, (req, res) => {
 
     // 1. saving all the contacts user has uploaded (synced with the app)
     const insertEdge = db.prepare('INSERT OR IGNORE INTO mutuals (owner_id, contact_phone_hash) VALUES (?, ?)');
-    secureContactHashes.forEach(hash => {
-        insertEdge.run(parsedProfileId, hash);
+
+    // wrapped in transaction for performance boost
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        secureContactHashes.forEach(hash => {
+            insertEdge.run(parsedProfileId, hash);
+        });
+        insertEdge.finalize();
+        db.run('COMMIT');
     });
-    insertEdge.finalize();
 
     // 2. finding mutual connections
     db.get('SELECT phone_hash FROM profiles WHERE id = ?', [parsedProfileId], (err, user) => {
@@ -69,14 +84,18 @@ router.post('/sync', authenticateToken, (req, res) => {
                 VALUES (?, ?)
             `);
 
-            mutualProfiles.forEach(mutual => {
-                const id1 = Math.min(parsedProfileId, mutual.id);
-                const id2 = Math.max(parsedProfileId, mutual.id);
-                                                                                    
-                insertConnection.run(id1, id2);
-                newConnections.push(mutual.id);
+            db.serialize(() => {
+                db.run('BEGIN TRANSACTION');
+                mutualProfiles.forEach(mutual => {
+                    const id1 = Math.min(parsedProfileId, mutual.id);
+                    const id2 = Math.max(parsedProfileId, mutual.id);
+                                                                                        
+                    insertConnection.run(id1, id2);
+                    newConnections.push(mutual.id);
+                });
+                insertConnection.finalize();
+                db.run('COMMIT');
             });
-            insertConnection.finalize();
 
             res.json({
                 message: 'Contacts synced successfully!',

@@ -15,7 +15,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
 db.serialize(() => {
     // configuration for performance & constraints
     db.run('PRAGMA busy_timeout = 5000;');
-    db.run('PRAGMA foreign_keys = ON;');
+    db.run('PRAGMA foreign_keys = ON;', (err) => {
+        if (err) console.error('Error enabling foreign keys:', err.message);
+    });
+
+    db.run('PRAGMA journal_mode = WAL;', (err) => {
+        if (err) console.error('Error enabling WAL mode:', err.message);
+    });
 
     // 1. users table
     db.run(`
