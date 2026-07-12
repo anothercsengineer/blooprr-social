@@ -96,3 +96,16 @@
 
 - **[Network Security]** Replaced the wildcard CORS policy in `brain.js` with a strictly bound `allowedOrigins` array, ensuring the API exclusively accepts traffic from authorized local development ports.
 - **[Data Privacy]** Wrapped the mock SMS OTP console logger in a strict `NODE_ENV !== 'production'` environment check, guaranteeing sensitive phone and OTP data will never leak into production server logs.
+
+---
+
+# *Chronological record of the v0.3.5-alpha patch cycle*
+
+## Session 9: Structural Database Optimization & Payload Validation
+*Goal: Resolve the remaining Medium/Low severity backend bugs related to database scaling, concurrency, and NoSQL payload poisoning.*
+
+- **[Concurrency]** Configured `PRAGMA busy_timeout = 5000` in SQLite to resolve critical `SQLITE_BUSY` crashes during concurrent writes.
+- **[Data Integrity]** Enforced `PRAGMA foreign_keys = ON` to mathematically guarantee relational data integrity and prevent orphaned rows.
+- **[Performance]** Engineered three critical database indexes (`idx_bloops_profile_id`, `idx_mutuals_contact_hash`, `idx_engagements_bloop_id`) to definitively eliminate Full Table Scans and ensure hyper-fast feed loading.
+- **[Payload Security]** Hardened the `/sync` endpoint with strict integer casting for `profileId` and a rigorous 64-character hex-string regex for `contactHashes`, definitively blocking NoSQL injection and payload poisoning attacks.
+- **[Frontend UX]** Patched a template literal bug in `login.tsx` to correctly evaluate the HTTP response status on failure.
