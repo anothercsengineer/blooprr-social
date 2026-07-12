@@ -109,3 +109,14 @@
 - **[Performance]** Engineered three critical database indexes (`idx_bloops_profile_id`, `idx_mutuals_contact_hash`, `idx_engagements_bloop_id`) to definitively eliminate Full Table Scans and ensure hyper-fast feed loading.
 - **[Payload Security]** Hardened the `/sync` endpoint with strict integer casting for `profileId` and a rigorous 64-character hex-string regex for `contactHashes`, definitively blocking NoSQL injection and payload poisoning attacks.
 - **[Frontend UX]** Patched a template literal bug in `login.tsx` to correctly evaluate the HTTP response status on failure.
+
+---
+
+# *Chronological record of the v0.4.0-alpha minor update cycle*
+
+## Session 10: JWT Authentication Architecture
+*Goal: Implement a cryptographically secure session management system to prevent API impersonation and unauthorized access.*
+
+- **[Security Architecture]** Installed `jsonwebtoken` and engineered a centralized `authenticateToken` middleware to intercept and decode incoming HTTP headers.
+- **[Session Management]** Upgraded the `/verify-otp` login/signup endpoint to mathematically sign and issue a 1-year JWT payload containing the user's `profileId`.
+- **[API Hardening]** Protected the `/sync` endpoint with the JWT middleware. Eliminated critical vulnerability #3 by extracting the `profileId` strictly from the cryptographically verified token payload, completely neutralizing JSON body spoofing attacks.
