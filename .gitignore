@@ -12,9 +12,11 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# --- BACKEND ---
+# --- BACKEND & DATABASE ---
 blooprr.db
 *.db
+*.db-shm
+*.db-wal
 
 # --- FRONTEND (EXPO) ---
 .expo/                                                                           
@@ -34,3 +36,6 @@ expo-env.d.ts
 *.mobileprovision
 /app-frontend/ios/
 /app-frontend/android/
+
+# --- FIREBASE SECRET ---
+serviceAccountKey.json

@@ -6,9 +6,10 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { BACKEND_URL } from "@/constants/config";
+import auth from '@react-native-firebase/auth';
 
 export default function VerifyScreen() {
-    const { phone } = useLocalSearchParams(); // captures the phone number from previous page
+    const { phone, verificationId } = useLocalSearchParams<{ phone: string, verificationId: string }>(); // captures the phone number from previous page
     const safePhone = `+${phone?.toString().replace(/\D/g, '')}`; // glues the '+' back on the numbers
     const [otp, setOtp] = useState('');
     const OTP_LENGTH = 6;
@@ -21,23 +22,30 @@ export default function VerifyScreen() {
         if (!canProceed) return;
 
         try {
-            const backendUrl = 'http://10.0.2.2:3001';
+            // 1. check firebase's server for otp
+            const credential = auth.PhoneAuthProvider.credential(verificationId, otp);
+            const userCredential = await auth().signInWithCredential(credential);
 
+            // 2. grab the cryptographically secure ID token after firebase verification is done
+            const firebaseIdToken = await userCredential.user.getIdToken();
+
+            // 3. send the token instead of the raw otp
             const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: safePhone, otp: otp }),
+                body: JSON.stringify({ phone: safePhone, token: firebaseIdToken }),
             });
 
             if (response.ok) {
-                console.log("Successfully verified!");
+                console.log("Backend accepted Firebase token!");
                 // will connect to contacts sync page
                 // router.push('/sync');
             } else {
-                console.error("Invalid OTP!");
+                console.error("Backend refused token!");
             }
         } catch (error) {
-            console.error("Could not connect to backend!", error);
+            console.error("Firebase rejected OTP or network error:", error);
+            alert("Invalid code or expired. Please try again.")
         }
     };
 
