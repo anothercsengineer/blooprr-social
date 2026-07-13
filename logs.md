@@ -135,3 +135,25 @@
 - **[Backend (auth)]** Built a `setInterval` garbage collector to sweep expired OTPs from the mock store and definitively prevent memory leaks.
 - **[Backend (contacts)]** Handled the empty-array edge case to prevent `SQLITE_ERROR: near ")": syntax error` crashes when a user uploads 0 contacts.
 - **[Backend (contacts)]** Wrapped both `insertEdge` and `insertConnection` loops inside explicit `BEGIN TRANSACTION` blocks, increasing payload sync performance by 100x and eliminating event loop blocking.
+
+---
+
+# *Chronological record of the v0.5.0-alpha minor update cycle*
+
+## Session 12: Invite-Only Gate & SMS Quota Enforcement
+*Goal: Implement a resilient, invite-only signup system (Blipkey) with SMS quota protection and a flawless frontend UX.*
+
+- **[Database Architecture]** Engineered `blipkeys` and `daily_metrics` tables in `db.js`. Utilized an atomic `date_string` Primary Key with `ON CONFLICT DO UPDATE` to strictly enforce a daily Firebase SMS quota (10/day).
+- **[Authentication Flow]** Upgraded `auth.js` to intercept new signups and require a valid, unbound Blipkey. Engineered a secure "Phone Binding" mechanism that ties an invite key to a phone hash upon SMS request, preventing key theft while allowing legitimate retry attempts without burning quota.
+- **[DevOps Automation]** Created `scripts/genesis.js` to mint initial seed keys, and `scripts/distribute.js` to run as a daily cron job targeting users >24 hours old.
+- **[Frontend UX]** Intercepted the 400 error in `login.tsx` to dynamically route new users to a bespoke `/blipkey` gate screen.
+- **[Frontend UI Polish]** Built `blipkey.tsx` featuring an auto-formatter that strips non-alphabetical characters and auto-injects hyphens. Circumvented deep-rooted Android React Native `TextInput` cursor bugs by implementing a disappearing "Ghost Placeholder" using absolute positioning.
+- **[Networking]** Fixed the Android emulator localhost binding bug in `config.ts` to fully support physical device testing on the local Wi-Fi network.
+
+## Session 13: Native Authentication & Cloud Deployment
+*Goal: Replace mock authentication with real Firebase SMS verification and set up cloud compiling.*
+
+- **[Native Auth Integration]** Ripped out the mock SMS logic and wired up `@react-native-firebase/auth`. Added `google-services.json` and registered the Android SHA keys to properly handshake with Google servers.
+- **[Play Integrity & Testing]** Navigated Google's bot-prevention APIs. Leveraged Firebase's Test Numbers feature to bypass emulator blocks and verify the end-to-end login flow locally.
+- **[Cloud Compilation]** Set up Expo Application Services (EAS) with a custom `eas.json` profile. Shifted the physical APK builds to Expo's Linux servers to completely avoid local Windows C++ compiler conflicts.
+- **[Backend Validation]** Hooked up the Node.js backend to securely verify incoming Firebase tokens using the Firebase Admin SDK. Temporarily bumped the SQLite daily SMS limit to 1,000 to facilitate active development.
