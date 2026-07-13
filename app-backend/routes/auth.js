@@ -4,6 +4,13 @@ const db = require('../db');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken')
 const authenticateToken = require('../middleware/jwt');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const serviceAccount = require('../serviceAccountKey.json');
+
+initializeApp({
+    credential: cert(serviceAccount)
+});
 
 // NOTE: will have to add redis later to temporarily store OTPs
 const mockOtpStore = {};
@@ -82,7 +89,7 @@ function checkQuotaAndSendOTP(phone, today, res) {
 
         const count = row ? row.sms_count : 0;
 
-        // 10 SMS/day quota limit
+        // 10 SMS/day quota limit for developer testing
         if (count >= 10) {
             return res.status(429).json({ error: 'Blooprr is at capacity for today. Your invite is saved! Please try verifying tomorrow.' });
         }
@@ -109,37 +116,27 @@ function checkQuotaAndSendOTP(phone, today, res) {
 }
 
 // 2. otp verification and login/signup endpoint
-router.post('/verify-otp', (req, res) => {
-    const { phone, otp } = req.body;
+router.post('/verify-otp', async (req, res) => {
+    const { phone, token } = req.body;
 
-    if (!phone || !otp) {
-        return res.status(400).json({ error: 'Phone number and OTP are required!' });
+    if (!phone || !token) {
+        return res.status(400).json({ error: 'Phone number and Firebase token are required!' });
     }
 
-    const record = mockOtpStore[phone];
+    try {
+        // i. cryptographical verification of token from google
+        const decodedToken = await getAuth().verifyIdToken(token);
 
-    if (!record) {
-        return res.status(400).json({ error: 'No OTP requested for this number!' });
+        // ii. checking the phone no and token match
+        if (decodedToken.phone_number !== phone) {
+            return res.status(400).json({ error: 'Phone number mismatch!' });
+        }
+    } catch (error) {
+        console.error("Firebase Error:", error);
+        return res.status(400).json({ error: 'Invalid or expired Firebase token!' });
     }
 
-    if (Date.now() > record.expiresAt) {
-        delete mockOtpStore[phone];
-        return res.status(400).json({ error: 'OTP has expired!'})
-    }
-
-    if (record.attempts >= 5) {
-        delete mockOtpStore[phone];
-        return res.status(429).json({ error: 'Too many failed attempts! Request a new OTP.'});
-    }
-
-    if (record.otp !== otp) {
-        record.attempts += 1;
-        return res.status(400).json({ error: 'Invalid OTP!' });
-    }
-        
-    // if otp matches, its cleared from the memory
-    delete mockOtpStore[phone];
-
+    // if google approved it, proceeding with normal signup/login
     const phoneHash = hashPhoneNumber(phone);
 
     // checking if user exists in database
@@ -148,8 +145,8 @@ router.post('/verify-otp', (req, res) => {
 
         if (user) {
             // user exists - generate token and log in
-            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
-            return res.json({ message: 'Login successful', user, token, isNewUser: false });
+            const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+            return res.json({ message: 'Login successful', user, token: jwtToken, isNewUser: false });
         } else {
             // new user - sign up
             db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
@@ -159,8 +156,8 @@ router.post('/verify-otp', (req, res) => {
                 db.run('UPDATE blipkeys SET status = 1 WHERE redeemer_hash = ?', [phoneHash]);
 
                 const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
-                const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
-                return res.json({ message: 'Sign-up successful!', user: newUser, token, isNewUser: true });
+                const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+                return res.json({ message: 'Sign-up successful!', user: newUser, token: jwtToken, isNewUser: true });
             });
         }
     });

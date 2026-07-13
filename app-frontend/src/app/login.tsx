@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { BACKEND_URL } from '../constants/config';
+import auth from '@react-native-firebase/auth';
 
 export default function LoginScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -40,8 +41,20 @@ export default function LoginScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                console.log("OTP requested successfully! Check backend terminal for mock code.");
-                router.push({ pathname: '/verification', params: { phone: `+91${cleanNumber}` } });
+                console.log("Backend approved! Asking Firebase to send OTP on a SMS text...");
+                try {
+                    const confirmation = await auth().signInWithPhoneNumber(`+91${cleanNumber}`);
+                    router.push({
+                        pathname: '/verification',
+                        params: {
+                            phone: `+91${cleanNumber}`,
+                            verificationId: confirmation.verificationId
+                        }
+                    });
+                } catch (firebaseError) {
+                    console.error("Firebase Error:", firebaseError);
+                    alert("Failed to send SMS! Please try again or check your Firebase quota.");
+                }
             } else {
                 // catches missing-blipkey error
                 if (response.status === 400 && data.error === 'A blipkey (invite code) is required to sign up.') {

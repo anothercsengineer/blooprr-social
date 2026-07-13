@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "124724072098",
+    "project_id": "blooprr-eb04c",
+    "storage_bucket": "blooprr-eb04c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124724072098:android:c350c754dc8e1c63c551fb",
+        "android_client_info": {
+          "package_name": "com.blooprr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "124724072098-u4gucbcnqvu1ghrp3o0bpp27sq8fflhs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blooprr",
+            "certificate_hash": "0d1fabeb584c2b06d74680cbbfb4507b7081fed3"
+          }
+        },
+        {
+          "client_id": "124724072098-1o131icvhq0hgfu37h9lfsu34e5adqpb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQs95HEd0g4zl0ZgsxNliQvnSc0ERXvk8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "124724072098-1o131icvhq0hgfu37h9lfsu34e5adqpb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

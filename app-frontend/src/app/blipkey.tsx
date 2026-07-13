@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { BACKEND_URL } from '../constants/config';
+import auth from '@react-native-firebase/auth';
 
 export default function BlipkeyScreen() {
     const { phone } = useLocalSearchParams<{ phone: string }>();
@@ -46,7 +47,20 @@ export default function BlipkeyScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                router.push({ pathname: '/verification', params: { phone } });
+                console.log("Blipkey approved! Asking Firebase to send OTP on a SMS text...");
+                try {
+                    const confirmation = await auth().signInWithPhoneNumber(phone);
+                    router.push({
+                        pathname: '/verification',
+                        params: {
+                            phone,
+                            verificationId: confirmation.verificationId
+                        }
+                    });
+                } catch (firebaseError) {
+                    console.error("Firebase Error:", firebaseError);
+                    setErrorMessage("Failed to send SMS! Please try again or check your Firebase quota.");
+                }
             } else {
                 setErrorMessage(data.error || 'Something went wrong!');
             }
