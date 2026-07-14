@@ -227,3 +227,13 @@
 - **[Network Security]** Replaced the dead `allowedOrigins` array in `brain.js` with a strict boot-level crash condition that prevents the server from starting if the `CORS_ALLOWED_ORIGIN` environment variable is missing.
 - **[Database Architecture]** Engineered a `CREATE INDEX` statement for the `bearer` column on the `blipkeys` table, eliminating a Full Table Scan vulnerability on the `/my-blipkey` retrieval endpoint.
 - **[Codebase Polish]** Purged thousands of lines of dead code, including unused animations (`AnimatedIcon`), dead styles, and typos across both the frontend and backend repositories.
+
+---
+
+# *Chronological record of the v0.6.5-alpha patch update cycle*
+
+## Session 18 (Part 2): Post-Audit Deep Scour
+*Goal: Final manual security pass to ensure absolute zero-bug integrity before transitioning to feature development.*
+
+- **[Codebase Polish]** Resolved a trailing context variable (`newUserId`) inside the JWT assignment logic of the registration callback, ensuring context stability if arrow functions are refactored.
+- **[Network Security]** Patched a critical Information Disclosure vulnerability by deploying a global error handling middleware in `brain.js`, intercepting malformed JSON syntax errors and preventing Express from leaking HTML stack traces to unauthorized clients.
