@@ -47,7 +47,7 @@ db.serialize(() => {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- life_extension_hours tracks time added via likes/replies
             life_extension_hours INTEGER DEFAULT 0,
             is_saved_to_wall BOOLEAN DEFAULT 0,
-            FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
         )
     `);
 
@@ -57,7 +57,7 @@ db.serialize(() => {
             owner_id INTEGER NOT NULL,
             contact_phone_hash TEXT NOT NULL,
             PRIMARY KEY (owner_id, contact_phone_hash),
-            FOREIGN KEY(owner_id) REFERENCES profiles(id)
+            FOREIGN KEY(owner_id) REFERENCES profiles(id) ON DELETE CASCADE
         )
     `);
 
@@ -82,8 +82,8 @@ db.serialize(() => {
             type TEXT NOT NULL, -- 'like' or 'reply'
             reply_text TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(bloop_id) REFERENCES bloops(id),
-            FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            FOREIGN KEY(bloop_id) REFERENCES bloops(id) ON DELETE CASCADE,
+            FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
         )
     `);
 
@@ -97,7 +97,7 @@ db.serialize(() => {
             status BOOLEAN DEFAULT 0, -- flips to 1 when the blipkey is redeemed during registration
             expiry DATETIME NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(bearer) REFERENCES profiles(id)
+            FOREIGN KEY(bearer) REFERENCES profiles(id) ON DELETE CASCADE
         )
     `);
 

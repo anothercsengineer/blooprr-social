@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 export default function OnboardingScreen() {
   const handleInitialize = () => {
     console.log("Initialize button pressed!");
-    router.push('/login');
+    router.replace('/login');
   };
 
   return (
