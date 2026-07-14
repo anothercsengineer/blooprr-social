@@ -157,3 +157,15 @@
 - **[Play Integrity & Testing]** Navigated Google's bot-prevention APIs. Leveraged Firebase's Test Numbers feature to bypass emulator blocks and verify the end-to-end login flow locally.
 - **[Cloud Compilation]** Set up Expo Application Services (EAS) with a custom `eas.json` profile. Shifted the physical APK builds to Expo's Linux servers to completely avoid local Windows C++ compiler conflicts.
 - **[Backend Validation]** Hooked up the Node.js backend to securely verify incoming Firebase tokens using the Firebase Admin SDK. Temporarily bumped the SQLite daily SMS limit to 1,000 to facilitate active development.
+
+---
+
+# *Chronological record of the v0.6.0-alpha minor update cycle*
+
+## Session 14: Custom Authentication & Firebase Removal
+*Goal: Remove the Firebase SMS dependency to eliminate SMS costs and streamline the login architecture.*
+
+- **[Backend Refactor]** Completely removed Firebase Admin SDK and SMS quota logic (`daily_metrics`) from `auth.js`.
+- **[Custom Auth API]** Restructured backend into two separate endpoints (`/login` and `/register`). The new flow handles direct JWT generation upon phone/blipkey validation.
+- **[Frontend Refactor]** Purged `@react-native-firebase/auth` and the entire `verification.tsx` screen from the Expo app.
+- **[Frontend UX]** Updated `login.tsx` to handle JWTs securely using `expo-secure-store`, bypassing OTP entirely. Routed new users directly to the blipkey gate, and instantly authenticated returning users.
