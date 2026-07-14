@@ -23,6 +23,8 @@ db.serialize(() => {
         if (err) console.error('Error enabling WAL mode:', err.message);
     });
 
+    db.run('PRAGMA synchronous = NORMAL;');
+
     // 1. users table
     db.run(`
         CREATE TABLE IF NOT EXISTS profiles (

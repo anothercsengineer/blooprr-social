@@ -96,8 +96,11 @@ router.post('/sync', authenticateToken, (req, res) => {
                 insertConnection.finalize();
 
                 db.run('COMMIT', (commitErr) => {
-                    if (commitErr) return res.status(500).json({ error: 'Failed to save connections!' });
-
+                    if (commitErr) {
+                        db.run('ROLLBACK'); // prevents global deadlock
+                        return res.status(500).json({ error: 'Failed to save connections!' });
+                    }
+                    
                     res.json({
                         message: 'Contacts synced successfully!',
                         mutualConnectionsFound: newConnections.length,

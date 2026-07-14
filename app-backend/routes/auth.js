@@ -71,8 +71,10 @@ router.post('/register', (req, res) => {
                 const newUserId = this.lastID;
 
                 db.run('COMMIT', (commitErr) => {
-                    if (commitErr) return res.status(500).json({ error: 'Transaction commit failed!' });
-
+                    if (commitErr) {
+                        db.run('ROLLBACK'); // prevents global deadlock
+                        return res.status(500).json({ error: 'Transaction commit failed!' });
+                    }
                     // assign jwt and return
                     const newUser = { id: newUserId, bio: '', profile_pic_url: null };
                     const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
