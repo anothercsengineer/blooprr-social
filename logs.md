@@ -169,3 +169,18 @@
 - **[Custom Auth API]** Restructured backend into two separate endpoints (`/login` and `/register`). The new flow handles direct JWT generation upon phone/blipkey validation.
 - **[Frontend Refactor]** Purged `@react-native-firebase/auth` and the entire `verification.tsx` screen from the Expo app.
 - **[Frontend UX]** Updated `login.tsx` to handle JWTs securely using `expo-secure-store`, bypassing OTP entirely. Routed new users directly to the blipkey gate, and instantly authenticated returning users.
+
+---
+
+# *Chronological record of the v0.6.1-alpha patch update cycle*
+
+## Session 15: Critical & High Severity Bug Sweep
+*Goal: Resolve all critical and high severity vulnerabilities identified in the full-stack system audit.*
+
+- **[DevOps Cleanup]** Eliminated 3 critical vulnerabilities by purging `serviceAccountKey.json`, `google-services.json`, and all Firebase native SDK dependencies from the codebase.
+- **[Backend Security]** Patched a severe race condition in `auth.js` by executing an atomic `UPDATE` lock on the blipkey before inserting a new user profile.
+- **[Backend Security]** Enforced strict environment variable checks in `brain.js` to crash the server if `JWT_SECRET` or `PHONE_PEPPER` are missing, removing insecure hardcoded fallbacks.
+- **[Database Cleanup]** Dropped the deprecated `daily_metrics` table schema from `db.js`.
+- **[Frontend UX]** Resolved a double-tap race condition in `login.tsx` and `blipgate.tsx` by implementing an `isLoading` state to disable buttons during API requests.
+- **[Frontend UX]** Wrapped login screens in `TouchableWithoutFeedback` to allow users to dismiss the keyboard by tapping outside input fields.
+- **[Frontend Routing]** Implemented a deep-link guard in `blipgate.tsx` to prevent app crashes if a user bypasses the login screen without a valid phone parameter.
