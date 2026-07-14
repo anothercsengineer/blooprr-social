@@ -25,6 +25,8 @@ app.use(cors({
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 app.use(helmet());
+// required if running behind a reverse proxy so rate limiter doesn't block everyone globally
+app.set('trust proxy', 1);
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
