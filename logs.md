@@ -211,3 +211,19 @@
 - **[Security]** Augmented the blipkey redemption query to validate key expiry directly on the database layer.
 - **[Codebase Polish]** Refactored React state inside `login.tsx` to utilize `useMemo` hooks, definitively halting unnecessary string evaluation during render cycles.
 - **[DevOps Configuration]** Replaced the hardcoded IPv4 development address in `config.ts` with an environment variable fallback mechanism.
+
+---
+
+# *Chronological record of the v0.6.4-alpha patch update cycle*
+
+## Session 18: Final Audit Regression Sweep
+*Goal: Resolve all regression bugs introduced during the Session 17 audit, and finalize the application for the Contacts Engine milestone.*
+
+- **[Frontend Stability]** Fixed a critical React compilation crash in `_layout.tsx` by isolating native navigation imports and installing missing `@react-navigation/native` dependencies.
+- **[Frontend Stability]** Resolved an infinite splash screen loop by correcting a destructured variable mapping inside the font loading hook.
+- **[Frontend UI]** Resolved a CSS syntax error and a button state visual bug in the `blipgate` component.
+- **[Backend Security]** Implemented strict input validation on the `/login` and `/register` endpoints, enforcing a 64-character SHA-256 regex on all incoming phone hashes to prevent payload poisoning.
+- **[Backend Security]** Validated the blipkey format using strict regex checking on the `/register` endpoint to prevent database corruption.
+- **[Network Security]** Replaced the dead `allowedOrigins` array in `brain.js` with a strict boot-level crash condition that prevents the server from starting if the `CORS_ALLOWED_ORIGIN` environment variable is missing.
+- **[Database Architecture]** Engineered a `CREATE INDEX` statement for the `bearer` column on the `blipkeys` table, eliminating a Full Table Scan vulnerability on the `/my-blipkey` retrieval endpoint.
+- **[Codebase Polish]** Purged thousands of lines of dead code, including unused animations (`AnimatedIcon`), dead styles, and typos across both the frontend and backend repositories.
