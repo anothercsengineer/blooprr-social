@@ -51,7 +51,12 @@ router.post('/sync', authenticateToken, (req, res) => {
             insertEdge.run(parsedProfileId, hash);
         });
         insertEdge.finalize();
-        db.run('COMMIT');
+        db.run('COMMIT', (commitErr) => {
+            if (commitErr) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Failed to commit mutuals transaction!' });                                       
+            }
+        });
     });
 
     // 2. finding mutual connections
@@ -68,10 +73,11 @@ router.post('/sync', authenticateToken, (req, res) => {
             JOIN mutuals ON profiles.id = mutuals.owner_id
             WHERE profiles.phone_hash IN (${placeholders})
             AND mutuals.contact_phone_hash = ?
+            AND profiles.id != ?
         `;
 
-        // query parameters are all the hash phone numbers the user uploaded and also their own at the end
-        const params = [...secureContactHashes, myPhoneHash];
+        // query parameters are all the hash phone numbers the user uploaded, their own hash, and their profile ID
+        const params = [...secureContactHashes, myPhoneHash, parsedProfileId];
         
         db.all(query, params, (err, mutualProfiles) => {
             if (err) return res.status(500).json({ error: 'Error finding mutuals' });

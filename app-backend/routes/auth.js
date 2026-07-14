@@ -48,7 +48,7 @@ router.post('/register', (req, res) => {
         db.run('BEGIN TRANSACTION');
 
         // updating the key first so that it is certain no one else claimed it, also block expired keys
-        db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND expiry > datetime(\'now\')',
+        db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
         [finalHash, blipkey], function(err) {
             if (err) {
                 db.run('ROLLBACK');
@@ -99,7 +99,7 @@ router.get('/my-blipkey', authenticateToken, (req, res) => {
     db.get(`
         SELECT key, expiry
         FROM blipkeys
-        WHERE bearer = ? AND status = 0 AND redeemer_hash IS NULL AND expiry > dateTime('now')
+        WHERE bearer = ? AND status = 0 AND redeemer_hash IS NULL AND datetime(expiry) > dateTime('now')
     `, [profileId], (err, row) => {
         if (err) return res.status(500).json({ error: 'Database error' });
 

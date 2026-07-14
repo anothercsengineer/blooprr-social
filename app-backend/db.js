@@ -68,8 +68,8 @@ db.serialize(() => {
             profile_id_2 INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (profile_id_1, profile_id_2),
-            FOREIGN KEY(profile_id_1) REFERENCES profiles(id),
-            FOREIGN KEY(profile_id_2) REFERENCES profiles(id)
+            FOREIGN KEY(profile_id_1) REFERENCES profiles(id) ON DELETE CASCADE,
+            FOREIGN KEY(profile_id_2) REFERENCES profiles(id) ON DELETE CASCADE
         )
     `);
 
@@ -97,7 +97,8 @@ db.serialize(() => {
             status BOOLEAN DEFAULT 0, -- flips to 1 when the blipkey is redeemed during registration
             expiry DATETIME NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(bearer) REFERENCES profiles(id) ON DELETE CASCADE
+            FOREIGN KEY(bearer) REFERENCES profiles(id) ON DELETE CASCADE,
+            FOREIGN KEY(redeemer_hash) REFERENCES profiles(phone_hash) ON DELETE SET NULL
         )
     `);
 

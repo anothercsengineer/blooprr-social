@@ -8,6 +8,7 @@
     "scheme": "blooprr",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.blooprr",
       "icon": "./assets/images/icon.png"
     },
     "android": {
