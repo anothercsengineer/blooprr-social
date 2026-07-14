@@ -2,11 +2,11 @@ import { useState, useRef } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
-    Platform, Image, Pressable
+    Platform, Image, Pressable, Alert
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { BACKEND_URL } from '../constants/config';
-import auth from '@react-native-firebase/auth';
 
 export default function BlipkeyScreen() {
     const { phone } = useLocalSearchParams<{ phone: string }>();
@@ -38,7 +38,7 @@ export default function BlipkeyScreen() {
         if (!isValidKey) return;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/auth/request-otp`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone, blipkey }),
@@ -47,25 +47,18 @@ export default function BlipkeyScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                console.log("Blipkey approved! Asking Firebase to send OTP on a SMS text...");
-                try {
-                    const confirmation = await auth().signInWithPhoneNumber(phone);
-                    router.push({
-                        pathname: '/verification',
-                        params: {
-                            phone,
-                            verificationId: confirmation.verificationId
-                        }
-                    });
-                } catch (firebaseError) {
-                    console.error("Firebase Error:", firebaseError);
-                    setErrorMessage("Failed to send SMS! Please try again or check your Firebase quota.");
-                }
+                await SecureStore.setItemAsync('jwt', data.token);
+                console.log("Signup successful! Blipkey burned.");
+
+                router.replace('./home')
             } else {
-                setErrorMessage(data.error || 'Something went wrong!');
+                // displays the 400 error from the backend
+                Alert.alert("Error:", data.error || "Something went wrong.");
             }
+
         } catch (error) {
-            setErrorMessage('Could not connect to server!');
+            console.error("Could not connect to backend!", error);
+            Alert.alert("Network Error:", "Could not connect to the blooprr servers!")
         }
     };
 

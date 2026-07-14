@@ -1,12 +1,12 @@
-import { use, useState } from 'react';
+import { useState } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
-    Platform, Image
+    Platform, Image, Alert
 } from 'react-native';
 import { router, Stack } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { BACKEND_URL } from '../constants/config';
-import auth from '@react-native-firebase/auth';
 
 export default function LoginScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -30,41 +30,37 @@ export default function LoginScreen() {
     const handleProceed = async () => {
         if (!canProceed) return;
 
+        const formattedPhone = `+91${cleanNumber}`; // format with the country code
+
         // backend talking
         try {
-            const response = await fetch(`${BACKEND_URL}/api/auth/request-otp`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: `+91${cleanNumber}` }), // format with the country code
+                body: JSON.stringify({ phone: formattedPhone }), 
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                console.log("Backend approved! Asking Firebase to send OTP on a SMS text...");
-                try {
-                    const confirmation = await auth().signInWithPhoneNumber(`+91${cleanNumber}`);
-                    router.push({
-                        pathname: '/verification',
-                        params: {
-                            phone: `+91${cleanNumber}`,
-                            verificationId: confirmation.verificationId
-                        }
-                    });
-                } catch (firebaseError) {
-                    console.error("Firebase Error:", firebaseError);
-                    alert("Failed to send SMS! Please try again or check your Firebase quota.");
-                }
+                // for returning user, save the jwt token securely to the device
+                await SecureStore.setItemAsync('jwt', data.token);
+                console.log("Logged in successully!");
+
+                router.replace('/home');
+            } else if (response.status === 404) {
+                // for new user, redirect them to the blipgate screen
+                router.push({
+                    pathname: '/blipgate',
+                    params: { phone: `+91${cleanNumber}` }
+                });
             } else {
-                // catches missing-blipkey error
-                if (response.status === 400 && data.error === 'A blipkey (invite code) is required to sign up.') {
-                    router.push({ pathname: '/blipkey', params: { phone: `+91${cleanNumber}` } });
-                } else {
-                    console.error(`Backend refused with status ${response.status}. Error:`, data.error);
-                }
-            }
+                // some backend error (500 or something)
+                Alert.alert("Error:", data.error || "Something went wrong.");
+            } 
         } catch (error) {
             console.error("Could not connect to backend!", error);
+            Alert.alert("Network Error:", "Could not connect to the blooprr servers!")
         }
     };
 
