@@ -9,7 +9,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      { /* pushes content to the midde */}
+      { /* pushes content to the middle */}
       <View style={styles.content}>
         <Text style={styles.welcomeText}>welcome to</Text>
         

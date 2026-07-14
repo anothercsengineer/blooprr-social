@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "app-frontend",
-    "slug": "bloopr",
+    "slug": "blooprr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "appfrontend",
+    "scheme": "blooprr",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png"
@@ -34,7 +34,8 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

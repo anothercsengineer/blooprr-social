@@ -19,6 +19,7 @@ const generateBlipkey = () => `blp-${randomSegment()}-${randomSegment()}`;
 
 // 1. calculate 11:59:59 PM for the day
 const today = new Date();
+today.setDate(today.getDate() + 1); // push to tomorrow
 today.setUTCHours(23, 59, 59, 999);
 const expiryIso = today.toISOString();
 

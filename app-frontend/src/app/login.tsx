@@ -25,7 +25,7 @@ export default function LoginScreen() {
         setPhoneNumber(formatted);
     }
 
-    // validation: proccessing allowed only when 10 digits are entered and box is checked
+    // validation: processing allowed only when 10 digits are entered and box is checked
     const cleanNumber = useMemo (() => phoneNumber.replace(/\D/g, ''), [phoneNumber]);
     const isValidNumber = useMemo (() => cleanNumber.length >= 10, [cleanNumber]);
     const canProceed =  isValidNumber && agreed;
@@ -53,7 +53,7 @@ export default function LoginScreen() {
             if (response.ok) {
                 // for returning user, save the jwt token securely to the device
                 await SecureStore.setItemAsync('jwt', data.token);
-                console.log("Logged in successully!");
+                console.log("Logged in successfully!");
 
                 router.replace('/home');
             } else if (response.status === 404) {

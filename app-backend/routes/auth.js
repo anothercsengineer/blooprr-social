@@ -14,7 +14,7 @@ const applyPepper = (clientHash) => {
 router.post('/login', (req, res) => {
     const { phoneHash } = req.body;
 
-    if (!phoneHash || typeof phoneHash !== 'string') return res.status(400).json({ error: 'Phone number is required!' });
+    if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash)) return res.status(400).json({ error: 'Phone number is required!' });
 
     const finalHash = applyPepper(phoneHash);
 
@@ -37,7 +37,7 @@ router.post('/login', (req, res) => {
 router.post('/register', (req, res) => {
     const { phoneHash, blipkey } = req.body;
 
-    if (!phoneHash || !blipkey) {
+    if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash) || !blipkey || !/^blp-[a-z]{3}-[a-z]{3}$/.test(blipkey)) {
         return res.status(400).json({ error: 'Phone hash and Blipkey required!' });
     }
     
@@ -68,6 +68,8 @@ router.post('/register', (req, res) => {
                     return res.status(500).json({ error: 'Could not create user or user already exists!' });
                 }
                 
+                const newUserId = this.lastID;
+
                 db.run('COMMIT', (commitErr) => {
                     if (commitErr) return res.status(500).json({ error: 'Transaction commit failed!' });
 

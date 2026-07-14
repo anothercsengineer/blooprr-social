@@ -1,4 +1,5 @@
-import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -19,10 +20,10 @@ export default function TabLayout() {
     if (fontError) {
       console.error("Failed to load fonts:", fontError);
       SplashScreen.hideAsync();
-    } else if (loaded) {
+    } else if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, fontError]);
+  }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
     return null;

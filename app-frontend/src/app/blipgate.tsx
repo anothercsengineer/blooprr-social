@@ -28,7 +28,7 @@ export default function BlipkeyScreen() {
         // automatic lowercasing and whitespace stripping, doesnt allow numbers or symbols
         const lettersOnly = text.toLowerCase().replace(/[^a-z]/g, '');
 
-        // auto-injecting hypens for format consistency
+        // auto-injecting hyphens for format consistency
         let formatted = lettersOnly;
         if (lettersOnly.length > 3 && lettersOnly.length <= 6) {
             formatted = `${lettersOnly.slice(0, 3)}-${lettersOnly.slice(3)}`;
@@ -124,12 +124,12 @@ export default function BlipkeyScreen() {
                         <View style={styles.bottomArea}>
                             {/* unlock button */}
                             <TouchableOpacity
-                                style={[styles.button (!isValidKey || isLoading) ? styles.buttonInactive : styles.buttonActive]}
+                                style={[styles.button, (!isValidKey || isLoading) ? styles.buttonInactive : styles.buttonActive]}
                                 onPress={handleUnlock}
                                 disabled={!isValidKey || isLoading}
                                 activeOpacity={0.8}
                             >
-                                <Text style={[styles.buttonText, isValidKey && !isLoading ? styles.buttonInactive : styles.buttonTextInactive]}>
+                                <Text style={[styles.buttonText, isValidKey && !isLoading ? styles.buttonTextActive : styles.buttonTextInactive]}>
                                     {isLoading ? "loading..." : "unlock"}
                                 </Text>
                             </TouchableOpacity>
@@ -201,13 +201,6 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 0,
         textAlign: 'center',
-    },
-    errorText: {
-        color: '#FF4D4D',
-        fontSize: 14,
-        fontFamily: 'System',
-        marginTop: 10,
-        opacity: 0.8,
     },
     bottomArea: {
         width: '100%',

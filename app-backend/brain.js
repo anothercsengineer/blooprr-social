@@ -6,18 +6,18 @@ if (!process.env.JWT_SECRET || !process.env.PHONE_PEPPER) {
     process.exit(1);
 }
 
+if (!process.env.CORS_ALLOWED_ORIGIN) {
+    console.error("FATAL ERROR: CORS_ALLOWED_ORIGIN is not defined in .env!");
+    process.exit(1);
+}
+
 const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // middleware
-const allowedOrigins = [
-    'http://localhost:8081',
-    'http://localhost:3000',
-    'http://10.0.2.2:8081'
-]
 app.use(cors({
-    origin: process.env.CORS_ALLOWED_ORIGIN || '*',
+    origin: process.env.CORS_ALLOWED_ORIGIN,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

@@ -104,6 +104,7 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_mutuals_contact_hash ON mutuals(contact_phone_hash)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_engagements_bloop_id ON engagements(bloop_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_blipkeys_redeemer ON blipkeys(redeemer_hash)`);
+    db.run("CREATE INDEX IF NOT EXISTS idx_blipkeys_bearer ON blipkeys(bearer);");
 
     console.log('Database tables initialized!');
 });
