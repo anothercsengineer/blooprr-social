@@ -74,7 +74,7 @@ router.post('/register', (req, res) => {
                     if (commitErr) return res.status(500).json({ error: 'Transaction commit failed!' });
 
                     // assign jwt and return
-                    const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
+                    const newUser = { id: newUserId, bio: '', profile_pic_url: null };
                     const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
 
                     return res.json({ 

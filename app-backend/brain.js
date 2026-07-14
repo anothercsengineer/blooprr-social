@@ -45,6 +45,15 @@ app.get('/api/health', (req, res) => {
     res.json({ message: 'Welcome to the blooprr API!' });
 });
 
+// global error handler to prevent HTML stack trace leaks
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: 'Malformed JSON payload!' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error!' });
+});
+
 // server start
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
