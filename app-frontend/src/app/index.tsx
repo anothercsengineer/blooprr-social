@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 
 export default function OnboardingScreen() {

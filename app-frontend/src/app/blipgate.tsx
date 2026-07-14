@@ -12,8 +12,6 @@ import { BACKEND_URL } from '../constants/config';
 export default function BlipkeyScreen() {
     const { phone } = useLocalSearchParams<{ phone: string }>();
     const [blipkey, setBlipkey] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
-    const [isFocused, setIsFocused] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<TextInput>(null);
 
@@ -35,7 +33,6 @@ export default function BlipkeyScreen() {
         }
 
         setBlipkey(formatted);
-        setErrorMessage('');
     };
 
     // format check to enable the button
@@ -117,10 +114,6 @@ export default function BlipkeyScreen() {
                                     selectionColor="#00DCCA"
                                 />
                             </Pressable>
-                            {/* inline error message */}
-                            {errorMessage ? (
-                                <Text style={styles.errorText}>{errorMessage.toLowerCase()}</Text>
-                            ) : null}
                         </View>
 
                         {/* bottom area */}
