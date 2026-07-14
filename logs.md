@@ -237,3 +237,23 @@
 
 - **[Codebase Polish]** Resolved a trailing context variable (`newUserId`) inside the JWT assignment logic of the registration callback, ensuring context stability if arrow functions are refactored.
 - **[Network Security]** Patched a critical Information Disclosure vulnerability by deploying a global error handling middleware in `brain.js`, intercepting malformed JSON syntax errors and preventing Express from leaking HTML stack traces to unauthorized clients.
+
+---
+
+# *Chronological record of the v0.6.6-alpha patch update cycle*
+
+## Session 18 (Part 3): Database Concurrency & Performance Hardening
+*Goal: Resolve extreme edge-case backend deadlocks and unlock maximum SQLite concurrency for the Contacts Engine.*
+
+- **[Network Security]** Configured `express-rate-limit` to explicitly trust reverse proxies in `brain.js`, preventing a severe architectural bug that would have globally rate-limited all users simultaneously in production.
+- **[Database Stability]** Eliminated a catastrophic global deadlock vulnerability in `auth.js` and `contacts.js` by enforcing explicit `ROLLBACK` commands within `COMMIT` error handlers, preventing orphaned transactions from locking the shared SQLite connection.
+- **[Database Optimization]** Configured `PRAGMA synchronous = NORMAL` inside `db.js` to eliminate aggressive `fsync()` bottlenecks, unlocking maximum disk I/O performance for WAL-mode batch inserts during contact syncing.
+- **[Codebase Polish]** Purged final dead scalar variables from the `animated-icon` component to complete frontend codebase sanitization.
+- **[Database Stability]** Enforced `ON DELETE CASCADE` constraints across all relational database tables (`mutuals`, `bloops`, `engagements`, `blipkeys`) in `db.js` to ensure referential integrity and prevent SQLite constraint failure crashes during parent profile deletion.
+- **[Frontend Stability]** Resolved a navigation stack memory leak and UI bypass exploit in `index.tsx` by upgrading the onboarding root from `router.push` to `router.replace`.
+- **[Database Stability]** Patched a twin global deadlock vulnerability in `contacts.js` by wrapping the mutuals insertion transaction with a `ROLLBACK` callback.
+- **[Database Stability]** Applied the forgotten `ON DELETE CASCADE` constraint to the `connections` table in `db.js`.
+- **[Logic Flaw]** Patched a self-connection exploit in `contacts.js` by explicitly blocking users from matching their own phone hashes.
+- **[Logic Flaw]** Resolved a major ISO-8601 string-comparison bug in `auth.js` by wrapping the `expiry` column in SQLite's native `datetime()` function, fixing broken same-day expiration logic.
+- **[DevOps]** Added the missing `bundleIdentifier` to `app.json` to prevent catastrophic iOS build failures in EAS.
+- **[Frontend Stability]** Converted a relative routing path in `blipgate.tsx` to an absolute path (`/home`) to future-proof against route grouping crashes.
