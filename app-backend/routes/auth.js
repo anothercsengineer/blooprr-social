@@ -5,23 +5,21 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken')
 const authenticateToken = require('../middleware/jwt');
 
-const hashPhoneNumber = (phone) => {
+const applyPepper = (clientHash) => {
     const pepper = process.env.PHONE_PEPPER;
-    const cleaned = phone.replace(/\D/g, '');
-    const clientHash = crypto.createHash('sha256').update(cleaned).digest('hex');
     return crypto.createHash('sha256').update(clientHash + pepper).digest('hex');
 }
 
 // 1. login endpoint
 router.post('/login', (req, res) => {
-    const { phone } = req.body;
+    const { phoneHash } = req.body;
 
-    if (!phone || typeof phone !== 'string') return res.status(400).json({ error: 'Phone number is required!' });
+    if (!phoneHash || typeof phoneHash !== 'string') return res.status(400).json({ error: 'Phone number is required!' });
 
-    const phoneHash = hashPhoneNumber(phone);
+    const finalHash = applyPepper(phoneHash);
 
     // database check
-    db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [phoneHash], (err, user) => {
+    db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [finalHash], (err, user) => {
         if (err) return res.status(500).json({ error: 'Database error!' });
 
         if (user) {
@@ -36,35 +34,54 @@ router.post('/login', (req, res) => {
 });
 
 // 2. register endpoint
-router.post('/register', async (req, res) => {
-    const { phone, blipkey } = req.body;
+router.post('/register', (req, res) => {
+    const { phoneHash, blipkey } = req.body;
 
-    if (!phone || !blipkey) {
-        return res.status(400).json({ error: 'Phone number and Blipkey required!' });
+    if (!phoneHash || !blipkey) {
+        return res.status(400).json({ error: 'Phone hash and Blipkey required!' });
     }
     
-    const phoneHash = hashPhoneNumber(phone);
+    const finalHash = applyPepper(phoneHash);
 
-    // updating the key first so that it is certain no one else claimed it
-    db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0', [phoneHash, blipkey], function(err) {
-        if (err) return res.status(500).json({ error: 'Database error' });
+    // atomic transaction
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
 
-        // checking if key entered is fake, already used or expired
-        if (this.changes === 0) return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
+        // updating the key first so that it is certain no one else claimed it, also block expired keys
+        db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND expiry > datetime(\'now\')',
+        [finalHash, blipkey], function(err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Database error' });
+            }
 
-        // create new user
-        db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
-            if (insertErr) return res.status(500).json({ error: 'Could not create user or user already exists!' });
-            
-            // assign jwt and return
-            const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
-            const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
+            // checking if key entered is fake, already used or expired
+            if (this.changes === 0) {
+                db.run('ROLLBACK');
+                return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
+            }
 
-            return res.json({ 
-                message: 'Sign-up successful!', 
-                user: newUser, 
-                token: jwtToken, 
-                isNewUser: true 
+            // create new user (if failed, rollback is done to prevent blipkey burning)
+            db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [finalHash], function(insertErr) {
+                if (insertErr) {
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: 'Could not create user or user already exists!' });
+                }
+                
+                db.run('COMMIT', (commitErr) => {
+                    if (commitErr) return res.status(500).json({ error: 'Transaction commit failed!' });
+
+                    // assign jwt and return
+                    const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
+                    const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
+
+                    return res.json({ 
+                        message: 'Sign-up successful!', 
+                        user: newUser, 
+                        token: jwtToken, 
+                        isNewUser: true 
+                    });
+                });
             });
         });
     });

@@ -35,7 +35,6 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    height: '100%',
     backgroundColor: '#011110',
     alignItems: 'center',
     justifyContent: 'center',
@@ -64,7 +63,11 @@ const styles = StyleSheet.create({
     width: 280,
     alignItems: 'center',
     alignSelf: 'center',
-    boxShadow: '0px 0px 20px 2px rgba(0, 229, 255, 0.6)',
+    shadowColor: '#00DCCA',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 10,
   },
   buttonText: {
   color: '#011110',

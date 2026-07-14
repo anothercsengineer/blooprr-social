@@ -1,6 +1,1 @@
-import { Platform } from 'react-native';
-
-export const BACKEND_URL =
-    Platform.OS === 'android'
-        ? 'http://192.168.29.247:3001'
-        : 'http://localhost:3001';
+export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.29.247:3001';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import * as Crypto from 'expo-crypto';
 import { BACKEND_URL } from '../constants/config';
 
 export default function LoginScreen() {
@@ -25,24 +26,26 @@ export default function LoginScreen() {
     }
 
     // validation: proccessing allowed only when 10 digits are entered and box is checked
-    const cleanNumber = phoneNumber.replace(/\D/g, '');
-    const isValidNumber = cleanNumber.length >= 10;
+    const cleanNumber = useMemo (() => phoneNumber.replace(/\D/g, ''), [phoneNumber]);
+    const isValidNumber = useMemo (() => cleanNumber.length >= 10, [cleanNumber]);
     const canProceed =  isValidNumber && agreed;
 
     const handleProceed = async () => {
-        if (!canProceed) return;
-
-        const formattedPhone = `+91${cleanNumber}`; // format with the country code
-
         if (isLoading) return;
         setIsLoading(true);
 
-        // backend talking
         try {
+            // hashing the phone numbers locally before sending over the network
+            const clientHash = await Crypto.digestStringAsync(
+                Crypto.CryptoDigestAlgorithm.SHA256,
+                cleanNumber
+            );
+
+            // backend talking
             const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: formattedPhone }), 
+                body: JSON.stringify({ phoneHash: clientHash }), 
             });
 
             const data = await response.json();
@@ -57,7 +60,7 @@ export default function LoginScreen() {
                 // for new user, redirect them to the blipgate screen
                 router.push({
                     pathname: '/blipgate',
-                    params: { phone: `+91${cleanNumber}` }
+                    params: { phoneHash: clientHash }
                 });
             } else {
                 // some backend error (500 or something)
@@ -123,7 +126,7 @@ export default function LoginScreen() {
                                 </View>
                                 <Text style={styles.termsText}>
                                     By continuing, you agree to our{'\n'}
-                                    <Text style={styles.termsLink}>Privacy Policy and Terms</Text>
+                                    <Text style={styles.termsLink} onPress={() => Alert.alert("Legal", "Privacy Policy and Terms are currently being drafted.")}>Privacy Policy and Terms</Text>
                                 </Text>
                             </TouchableOpacity>
 
@@ -260,7 +263,11 @@ const styles = StyleSheet.create({
     },
     buttonActive: {
         backgroundColor: '#00DCCA',
-        boxShadow: '0px 0px 20px 2px rgba(0, 229, 255, 0.6)',
+        shadowColor: '#00DCCA',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 10,
     },
     buttonText: {
         fontSize: 30,

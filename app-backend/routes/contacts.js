@@ -3,12 +3,12 @@ const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
 const authenticateToken = require('../middleware/jwt');
-const pepper = process.env.PHONE_PEPPER;
 
 // sync contacts endpoint
 router.post('/sync', authenticateToken, (req, res) => {
     const { contactHashes } = req.body;
     const profileId = req.user.id;
+    const pepper = process.env.PHONE_PEPPER;
 
     // clean integer validation
     const parsedProfileId = parseInt(profileId, 10);
@@ -94,13 +94,16 @@ router.post('/sync', authenticateToken, (req, res) => {
                     newConnections.push(mutual.id);
                 });
                 insertConnection.finalize();
-                db.run('COMMIT');
-            });
 
-            res.json({
-                message: 'Contacts synced successfully!',
-                mutualConnectionsFound: newConnections.length,
-                connectedProfileIds: newConnections
+                db.run('COMMIT', (commitErr) => {
+                    if (commitErr) return res.status(500).json({ error: 'Failed to save connections!' });
+
+                    res.json({
+                        message: 'Contacts synced successfully!',
+                        mutualConnectionsFound: newConnections.length,
+                        connectedProfileIds: newConnections
+                    });
+                });
             });
         });
     });

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
@@ -10,15 +10,19 @@ import * as SecureStore from 'expo-secure-store';
 import { BACKEND_URL } from '../constants/config';
 
 export default function BlipkeyScreen() {
-    const { phone } = useLocalSearchParams<{ phone: string }>();
+    const { phoneHash } = useLocalSearchParams<{ phoneHash: string }>();
     const [blipkey, setBlipkey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<TextInput>(null);
 
-    if (!phone || typeof phone !== 'string') {
-        router.replace('/login');
-        return null;
-    }
+    useEffect(() => {
+        if (!phoneHash || typeof phoneHash !== 'string') {
+            router.replace('/login');
+        }
+    }, [phoneHash]);
+
+    // prevent rendering the UI while it redirects
+    if (!phoneHash || typeof phoneHash != 'string') return null;
 
     const handleKeyChange = (text: string) => {
         // automatic lowercasing and whitespace stripping, doesnt allow numbers or symbols
@@ -48,7 +52,7 @@ export default function BlipkeyScreen() {
             const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, blipkey }),
+                body: JSON.stringify({ phoneHash, blipkey }),
             });
 
             const data = await response.json();
@@ -120,12 +124,12 @@ export default function BlipkeyScreen() {
                         <View style={styles.bottomArea}>
                             {/* unlock button */}
                             <TouchableOpacity
-                                style={[styles.button, isLoading ? styles.buttonInactive : styles.buttonActive]}
+                                style={[styles.button (!isValidKey || isLoading) ? styles.buttonInactive : styles.buttonActive]}
                                 onPress={handleUnlock}
-                                disabled={isLoading}
+                                disabled={!isValidKey || isLoading}
                                 activeOpacity={0.8}
                             >
-                                <Text style={[styles.buttonText]}>
+                                <Text style={[styles.buttonText, isValidKey && !isLoading ? styles.buttonInactive : styles.buttonTextInactive]}>
                                     {isLoading ? "loading..." : "unlock"}
                                 </Text>
                             </TouchableOpacity>
@@ -220,7 +224,11 @@ const styles = StyleSheet.create({
     },
     buttonActive: {
         backgroundColor: '#00DCCA',
-        boxShadow: '0px 0px 20px 2px rgba(0, 229, 255, 0.6)',
+        shadowColor: '#00DCCA',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 10,
     },
     buttonText: {
         fontSize: 30,

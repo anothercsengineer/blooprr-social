@@ -16,10 +16,13 @@ export default function TabLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (fontError) {
+      console.error("Failed to load fonts:", fontError);
+      SplashScreen.hideAsync();
+    } else if (loaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [loaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
     return null;

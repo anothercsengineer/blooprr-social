@@ -19,7 +19,7 @@ const generateBlipkey = () => `blp-${randomSegment()}-${randomSegment()}`;
 
 // 1. calculate 11:59:59 PM for the day
 const today = new Date();
-today.setHours(23, 59, 59, 999);
+today.setUTCHours(23, 59, 59, 999);
 const expiryIso = today.toISOString();
 
 console.log(`\n[CRON] Starting daily Blipkey distribution...`);

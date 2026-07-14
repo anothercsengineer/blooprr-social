@@ -71,7 +71,7 @@ db.serialize(() => {
         )
     `);
 
-    // 4. engagments table
+    // 4. engagements table
     db.run(`
         CREATE TABLE IF NOT EXISTS engagements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,14 +85,14 @@ db.serialize(() => {
         )
     `);
 
-    // 4. invite codes table
+    // 5. invite codes table
     db.run(`
         CREATE TABLE IF NOT EXISTS blipkeys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             key TEXT UNIQUE NOT NULL,
             bearer INTEGER, -- profile_id of the user who received the blip key (NULL for Genesis keys)
             redeemer_hash TEXT, -- phone hash of the person claiming it (NULL until claimed)
-            status BOOLEAN DEFAULT 0, -- flips to 1 ONLY after a successful OTP verification
+            status BOOLEAN DEFAULT 0, -- flips to 1 when the blipkey is redeemed during registration
             expiry DATETIME NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(bearer) REFERENCES profiles(id)
@@ -103,7 +103,6 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_bloops_profile_id ON bloops(profile_id)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_mutuals_contact_hash ON mutuals(contact_phone_hash)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_engagements_bloop_id ON engagements(bloop_id)`);
-    db.run(`CREATE INDEX IF NOT EXISTS idx_blipkeys_key ON blipkeys(key)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_blipkeys_redeemer ON blipkeys(redeemer_hash)`);
 
     console.log('Database tables initialized!');

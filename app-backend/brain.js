@@ -17,13 +17,9 @@ const allowedOrigins = [
     'http://10.0.2.2:8081'
 ]
 app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS!'));
-        }
-    }
+    origin: process.env.CORS_ALLOWED_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 const helmet = require('helmet');
@@ -45,7 +41,7 @@ const contactsRoutes = require('./routes/contacts');
 app.use('/api/contacts', contactsRoutes);
 
 // test route
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ message: 'Welcome to the blooprr API!' });
 });
 
@@ -63,6 +59,15 @@ process.on('SIGINT', () => {
         } else {
             console.log('Database closed successfully.');
         }
+        process.exit(0);
+    });
+});
+
+process.on('SIGTERM', () => {
+    console.log("Shutting down servers... (SIGTERM)");
+    db.close((err) => {
+        if (err) console.error("Error closing database:", err.message);
+        else console.log("Database connection closed.");
         process.exit(0);
     });
 });
