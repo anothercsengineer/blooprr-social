@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
-    Platform, Image, Alert
+    Platform, Image, Alert,
+    Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -11,6 +12,7 @@ import { BACKEND_URL } from '../constants/config';
 export default function LoginScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [agreed, setAgreed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const handlePhoneChange = (text: string) => {
         const numericOnly = text.replace(/[^0-9]/g, '');
 
@@ -31,6 +33,9 @@ export default function LoginScreen() {
         if (!canProceed) return;
 
         const formattedPhone = `+91${cleanNumber}`; // format with the country code
+
+        if (isLoading) return;
+        setIsLoading(true);
 
         // backend talking
         try {
@@ -61,6 +66,8 @@ export default function LoginScreen() {
         } catch (error) {
             console.error("Could not connect to backend!", error);
             Alert.alert("Network Error:", "Could not connect to the blooprr servers!")
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -71,67 +78,69 @@ export default function LoginScreen() {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View style={styles.container}>
-                    {/* logo on top */}
-                    <View style={styles.header}>
-                        <Image
-                            source={require('../../assets/images/dark_logo.png')}
-                            style={styles.logoImage}
-                            resizeMode="contain"
-                        />
-                    </View>
-
-                    {/* middle placeholder area */}
-                    <View style={styles.content}>
-                        <Text style={styles.title}>enter your number</Text>
-                        <Text style={styles.subtitle}>dw we won't leak it!</Text>
-
-                        <View style={styles.inputContainer}>
-                            <Text style={styles.countryCode}>+91</Text>
-                            <View style={styles.divider} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="XXXXX XXXXX"
-                                placeholderTextColor="#545757"
-                                keyboardType="phone-pad"
-                                value={phoneNumber}
-                                onChangeText={handlePhoneChange}
-                                maxLength={11}
-                                selectionColor="#00DCCA"
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.container}>
+                        {/* logo on top */}
+                        <View style={styles.header}>
+                            <Image
+                                source={require('../../assets/images/dark_logo.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
                             />
                         </View>
-                    </View>
 
-                    {/* bottom area */}
-                    <View style={styles.bottomArea}>
-                        {/* custom checkbox row */}
-                        <TouchableOpacity
-                            style={styles.checkboxContainer}
-                            onPress={() => setAgreed(!agreed)}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.checkbox, agreed && styles.checkboxActive]}>
-                                {agreed && <Text style={styles.checkmark}>✓</Text>}
+                        {/* middle placeholder area */}
+                        <View style={styles.content}>
+                            <Text style={styles.title}>enter your number</Text>
+                            <Text style={styles.subtitle}>dw we won't leak it!</Text>
+
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.countryCode}>+91</Text>
+                                <View style={styles.divider} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="XXXXX XXXXX"
+                                    placeholderTextColor="#545757"
+                                    keyboardType="phone-pad"
+                                    value={phoneNumber}
+                                    onChangeText={handlePhoneChange}
+                                    maxLength={11}
+                                    selectionColor="#00DCCA"
+                                />
                             </View>
-                            <Text style={styles.termsText}>
-                                By continuing, you agree to our{'\n'}
-                                <Text style={styles.termsLink}>Privacy Policy and Terms</Text>
-                            </Text>
-                        </TouchableOpacity>
+                        </View>
 
-                        {/* proceed button */}
-                        <TouchableOpacity
-                            style={[styles.button, canProceed ? styles.buttonActive : styles.buttonInactive]}
-                            onPress={handleProceed}
-                            disabled={!canProceed}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.buttonText, canProceed ? styles.buttonTextActive : styles.buttonTextInactive]}>
-                                proceed
-                            </Text>
-                        </TouchableOpacity>
+                        {/* bottom area */}
+                        <View style={styles.bottomArea}>
+                            {/* custom checkbox row */}
+                            <TouchableOpacity
+                                style={styles.checkboxContainer}
+                                onPress={() => setAgreed(!agreed)}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[styles.checkbox, agreed && styles.checkboxActive]}>
+                                    {agreed && <Text style={styles.checkmark}>✓</Text>}
+                                </View>
+                                <Text style={styles.termsText}>
+                                    By continuing, you agree to our{'\n'}
+                                    <Text style={styles.termsLink}>Privacy Policy and Terms</Text>
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* proceed button */}
+                            <TouchableOpacity
+                                style={[styles.button, (!canProceed || isLoading) ? styles.buttonInactive : styles.buttonActive]}
+                                onPress={handleProceed}
+                                disabled={!canProceed || isLoading}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.buttonText, canProceed ? styles.buttonTextActive : styles.buttonTextInactive]}>
+                                    {isLoading ? "loading..." : "proceed"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
         </>
     );

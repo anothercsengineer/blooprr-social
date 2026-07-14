@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
 const authenticateToken = require('../middleware/jwt');
-const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
+const pepper = process.env.PHONE_PEPPER;
 
 // sync contacts endpoint
 router.post('/sync', authenticateToken, (req, res) => {

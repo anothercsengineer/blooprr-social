@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken')
 const authenticateToken = require('../middleware/jwt');
 
 const hashPhoneNumber = (phone) => {
-    const pepper = process.env.PHONE_PEPPER || 'default-blooprr-pepper';
+    const pepper = process.env.PHONE_PEPPER;
     const cleaned = phone.replace(/\D/g, '');
     const clientHash = crypto.createHash('sha256').update(cleaned).digest('hex');
     return crypto.createHash('sha256').update(clientHash + pepper).digest('hex');
@@ -26,7 +26,7 @@ router.post('/login', (req, res) => {
 
         if (user) {
             // user exists - generate token and log in
-            const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+            const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
             return res.json({ message: 'Login successful', user, token: jwtToken, isNewUser: false });
         } else {
             // 404 error to redirect non-existing user to blip gate screen
@@ -45,25 +45,20 @@ router.post('/register', async (req, res) => {
     
     const phoneHash = hashPhoneNumber(phone);
 
-    db.get('SELECT * FROM blipkeys WHERE key = ?', [blipkey], (err, keyRow) => {
+    // updating the key first so that it is certain no one else claimed it
+    db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0', [phoneHash, blipkey], function(err) {
         if (err) return res.status(500).json({ error: 'Database error' });
 
-        // checking if key exists, is unused and not expired
-        if (!keyRow || keyRow.status === 1) return res.status(400).json({ error: 'Invalid or already used Blipkey!' });
-        if (new Date(keyRow.expiry) < new Date()) return res.status(400).json({ error: 'This Blipkey has expired!' });
+        // checking if key entered is fake, already used or expired
+        if (this.changes === 0) return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
 
         // create new user
         db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [phoneHash], function(insertErr) {
             if (insertErr) return res.status(500).json({ error: 'Could not create user or user already exists!' });
-
-            const newUserId = this.lastID;
-
-            // burning the blipkey so it cannot be used again
-            db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ?', [phoneHash, blipkey]);
-
+            
             // assign jwt and return
             const newUser = { id: this.lastID, bio: '', profile_pic_url: null };
-            const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET || 'default-blooprr-jwt-secret', { expiresIn: '1y' });
+            const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
 
             return res.json({ 
                 message: 'Sign-up successful!', 

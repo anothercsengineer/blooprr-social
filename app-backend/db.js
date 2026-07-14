@@ -34,28 +34,6 @@ db.serialize(() => {
         )
     `);
 
-    // invite codes table
-    db.run(`
-        CREATE TABLE IF NOT EXISTS blipkeys (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT UNIQUE NOT NULL,
-            bearer INTEGER, -- profile_id of the user who received the blip key (NULL for Genesis keys)
-            redeemer_hash TEXT, -- phone hash of the person claiming it (NULL until claimed)
-            status BOOLEAN DEFAULT 0, -- flips to 1 ONLY after a successful OTP verification
-            expiry DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(bearer) REFERENCES profiles(id)
-        )
-    `);
-
-    // daily metrics tracker
-    db.run(`
-        CREATE TABLE IF NOT EXISTS daily_metrics (
-            date_string TEXT PRIMARY KEY, -- Format: 'YYYY-MM-DD'
-            sms_count INTEGER DEFAULT 0
-        )
-    `);
-
     // 2. bloops table
     db.run(`
         CREATE TABLE IF NOT EXISTS bloops (
@@ -104,6 +82,20 @@ db.serialize(() => {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(bloop_id) REFERENCES bloops(id),
             FOREIGN KEY(profile_id) REFERENCES profiles(id)
+        )
+    `);
+
+    // 4. invite codes table
+    db.run(`
+        CREATE TABLE IF NOT EXISTS blipkeys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT UNIQUE NOT NULL,
+            bearer INTEGER, -- profile_id of the user who received the blip key (NULL for Genesis keys)
+            redeemer_hash TEXT, -- phone hash of the person claiming it (NULL until claimed)
+            status BOOLEAN DEFAULT 0, -- flips to 1 ONLY after a successful OTP verification
+            expiry DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(bearer) REFERENCES profiles(id)
         )
     `);
 

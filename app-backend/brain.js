@@ -1,8 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const db = require('./db');
+IF (!process.env.JWT_SECRET || !process.env.PHONE_PEPPER) {
+    console.error('FATAL ERROR: JWT_SECRET and PHONE_PEPPER must be set in .env!');
+    process.exit(1);
+}
 
+const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3001;
 

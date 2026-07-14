@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import {
     StyleSheet, Text, View, TextInput,
     TouchableOpacity, KeyboardAvoidingView,
-    Platform, Image, Pressable, Alert
+    Platform, Image, Pressable, Alert,
+    Keyboard, TouchableWithoutFeedback
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -13,7 +14,13 @@ export default function BlipkeyScreen() {
     const [blipkey, setBlipkey] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isFocused, setIsFocused] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<TextInput>(null);
+
+    if (!phone || typeof phone !== 'string') {
+        router.replace('/login');
+        return null;
+    }
 
     const handleKeyChange = (text: string) => {
         // automatic lowercasing and whitespace stripping, doesnt allow numbers or symbols
@@ -37,6 +44,9 @@ export default function BlipkeyScreen() {
     const handleUnlock = async () => {
         if (!isValidKey) return;
 
+        if (isLoading) return;
+        setIsLoading(true);
+
         try {
             const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
                 method: 'POST',
@@ -59,6 +69,8 @@ export default function BlipkeyScreen() {
         } catch (error) {
             console.error("Could not connect to backend!", error);
             Alert.alert("Network Error:", "Could not connect to the blooprr servers!")
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -69,62 +81,64 @@ export default function BlipkeyScreen() {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <View style={styles.container}>
-                    {/* logo on top */}
-                    <View style={styles.header}>
-                        <Image
-                            source={require('../../assets/images/dark_logo.png')}
-                            style={styles.logoImage}
-                            resizeMode="contain"
-                        />
-                    </View>
-
-                    {/* middle content area */}
-                    <View style={styles.content}>
-                        <Text style={styles.title}>got a blip key?</Text>
-                        <Text style={styles.subtitle}>blooprr's invite-only rn</Text>
-
-                        <Pressable 
-                            style={styles.inputContainer}
-                            onPress={() => inputRef.current?.focus()}
-                        >
-                            {/* The Ghost Placeholder */}
-                            {blipkey.length === 0 && (
-                                <Text style={styles.ghostText} pointerEvents="none">
-                                    blp-xxx-xxx
-                                </Text>
-                            )}
-                            <TextInput
-                                ref={inputRef}
-                                style={styles.input}
-                                maxLength={11}
-                                value={blipkey}
-                                onChangeText={handleKeyChange}
-                                autoCapitalize="none"
-                                selectionColor="#00DCCA"
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.container}>
+                        {/* logo on top */}
+                        <View style={styles.header}>
+                            <Image
+                                source={require('../../assets/images/dark_logo.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
                             />
-                        </Pressable>
-                        {/* inline error message */}
-                        {errorMessage ? (
-                            <Text style={styles.errorText}>{errorMessage.toLowerCase()}</Text>
-                        ) : null}
-                    </View>
+                        </View>
 
-                    {/* bottom area */}
-                    <View style={styles.bottomArea}>
-                        {/* unlock button */}
-                        <TouchableOpacity
-                            style={[styles.button, isValidKey ? styles.buttonActive : styles.buttonInactive]}
-                            onPress={handleUnlock}
-                            disabled={!isValidKey}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={[styles.buttonText, isValidKey ? styles.buttonTextActive : styles.buttonTextInactive]}>
-                                unlock
-                            </Text>
-                        </TouchableOpacity>
+                        {/* middle content area */}
+                        <View style={styles.content}>
+                            <Text style={styles.title}>got a blip key?</Text>
+                            <Text style={styles.subtitle}>blooprr's invite-only rn</Text>
+
+                            <Pressable 
+                                style={styles.inputContainer}
+                                onPress={() => inputRef.current?.focus()}
+                            >
+                                {/* The Ghost Placeholder */}
+                                {blipkey.length === 0 && (
+                                    <Text style={styles.ghostText} pointerEvents="none">
+                                        blp-xxx-xxx
+                                    </Text>
+                                )}
+                                <TextInput
+                                    ref={inputRef}
+                                    style={styles.input}
+                                    maxLength={11}
+                                    value={blipkey}
+                                    onChangeText={handleKeyChange}
+                                    autoCapitalize="none"
+                                    selectionColor="#00DCCA"
+                                />
+                            </Pressable>
+                            {/* inline error message */}
+                            {errorMessage ? (
+                                <Text style={styles.errorText}>{errorMessage.toLowerCase()}</Text>
+                            ) : null}
+                        </View>
+
+                        {/* bottom area */}
+                        <View style={styles.bottomArea}>
+                            {/* unlock button */}
+                            <TouchableOpacity
+                                style={[styles.button, isLoading ? styles.buttonInactive : styles.buttonActive]}
+                                onPress={handleUnlock}
+                                disabled={isLoading}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.buttonText]}>
+                                    {isLoading ? "loading..." : "unlock"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
         </>
     );

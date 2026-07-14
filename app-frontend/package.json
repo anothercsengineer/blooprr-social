@@ -4,8 +4,6 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.4",
-    "@react-native-firebase/app": "^25.1.0",
-    "@react-native-firebase/auth": "^25.1.0",
     "expo": "~57.0.4",
     "expo-constants": "~57.0.3",
     "expo-contacts": "~57.0.0",
