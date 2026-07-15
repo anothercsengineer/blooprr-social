@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#00DCCA',
         width: '100%',
+        height: 65,
         paddingHorizontal: 20,
-        paddingVertical: 14,
     },
     ghostText: {
         position: 'absolute',
@@ -204,6 +204,8 @@ const styles = StyleSheet.create({
     },
     bottomArea: {
         width: '100%',
+        minHeight: 140,
+        justifyContent: 'flex-end',
     },
     button: {
         paddingVertical: 14,
@@ -217,11 +219,6 @@ const styles = StyleSheet.create({
     },
     buttonActive: {
         backgroundColor: '#00DCCA',
-        shadowColor: '#00DCCA',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 10,
-        elevation: 10,
     },
     buttonText: {
         fontSize: 30,

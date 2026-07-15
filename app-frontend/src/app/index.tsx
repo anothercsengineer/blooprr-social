@@ -63,11 +63,6 @@ const styles = StyleSheet.create({
     width: 280,
     alignItems: 'center',
     alignSelf: 'center',
-    shadowColor: '#00DCCA',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 10,
   },
   buttonText: {
   color: '#011110',
