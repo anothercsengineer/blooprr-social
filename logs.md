@@ -301,3 +301,19 @@
 - **[Passcode UX]** Implemented dynamic `editable={isPrimaryValid}` state locks to mathematically prevent users from interacting with the confirmation inputs before the primary inputs are satisfied.
 - **[Passcode Architecture]** Solved an asynchronous React Native `.focus()` race condition by queueing the auto-focus logic inside a 50ms `setTimeout` on the JavaScript event loop.
 - **[Passcode Layout]** Refactored core flexbox constraints: removed hardcoded margins and arbitrary min-heights, replacing them with a `flex: 1` container paired with a dynamic `marginBottom` to achieve pixel-perfect visual vertical centering.
+
+---
+
+# *Chronological record of the v0.9.0-alpha minor update cycle*
+
+## Session 21: Zero-Knowledge Contact Sync & Architecture Polish
+*Goal: Build the contact synchronization UI, integrate native device phonebooks, and achieve mathematical privacy via local client-side hashing.*
+
+- **[Frontend Architecture]** Built `sync.tsx` featuring a clean, stacked-button UI matching the design specs.
+- **[Frontend Native]** Integrated `expo-contacts` to securely request native OS permissions and fetch device phonebooks.
+- **[Frontend Security]** Engineered a zero-knowledge cryptographic pipeline using `expo-crypto` to mathematically hash all phone numbers via SHA-256 locally on the device prior to network transmission.
+- **[Frontend Routing]** Configured dynamic routing in `setup.tsx` to seamlessly funnel users to the new `/sync` screen upon profile completion.
+- **[Backend Architecture]** Resolved a critical HTTP 413 (Payload Too Large) crash in `brain.js` by increasing the `express.json` parsing limit from `1mb` to `10mb`, successfully accommodating high-resolution `base64` camera payloads.
+- **[Backend Debugging]** Fixed a silent JSON parsing crash masquerading as a `Network Error` by correcting a routing mismatch (`/api/profile` -> `/api/profiles`), definitively matching the Express mount path.
+- **[Frontend UI Polish]** Polished visual constraints in `setup.tsx` by locking the `bioInput` width to `85%`, achieving perfect vertical column alignment with the primary action button.
+- **[Passcode UX]** Resolved a critical UX keyboard trap in `passcode.tsx` by binding the confirmation row's `TouchableWithoutFeedback` directly to `confirmInputRef.current?.focus()`, restoring full dual-row interactivity.
