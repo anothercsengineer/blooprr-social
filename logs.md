@@ -278,3 +278,26 @@
 - **[Frontend Polish]** Polished the `eyeButtonPin` with `paddingTop` for perfect visual alignment with the cyan bottom borders of the PIN boxes, and added `paddingRight` to `alphaInput` to prevent text overlap.
 - **[Advanced UX]** Engineered seamless keyboard routing for PIN modes: dynamically triggering `confirmInputRef.current.focus()` the exact millisecond the user reaches the `pinLength` limit.
 - **[Advanced UX]** Upgraded Alpha mode keyboard navigation by implementing `returnKeyType="next"` and `"done"` combined with `onSubmitEditing`, enabling flawless progression from the primary input to the confirmation input, and finally triggering account creation.
+
+---
+
+# *Chronological record of the v0.8.0-alpha minor update cycle*
+
+## Session 20: Profile Setup Architecture & Passcode Perfection
+*Goal: Build a minimalist profile creation UI, integrate native device camera rolls, and finalize the passcode screen's structural layout.*
+
+- **[Backend Architecture]** Engineered new `/api/profiles/setup` endpoint in `routes/profiles.js`.
+- **[Backend Security]** Implemented JWT middleware protection for the profile setup route to mathematically verify user identity.
+- **[Backend Security]** Added native backend string sanitization to enforce a strict 150-character limit on bio submissions, neutralizing frontend bypass attacks.
+- **[Backend Architecture]** Mounted the new profile router securely into the Express app (`brain.js`).
+- **[Database Integrity]** Fixed a critical Foreign Key Constraint transaction crash in `auth.js` by logically re-ordering profile insertions to execute before blipkey redemption updates.
+- **[Frontend Architecture]** Created `setup.tsx` featuring a minimalist dark-mode profile creation UI matching exact design specifications.
+- **[Frontend Native]** Integrated `expo-image-picker` with an enforced 1:1 aspect ratio crop and high-compression tuning for optimal avatar capture.
+- **[Frontend Optimization]** Engineered a dual-state image architecture in `setup.tsx`: utilizing local URIs for instant UI rendering while preserving the heavyweight base64 string exclusively for the backend payload.
+- **[Frontend UI Polish]** Built a multi-line `<TextInput>` for bio entry and stripped Android's invisible default padding to achieve perfect placeholder-to-text baseline alignment.
+- **[Frontend UI Polish]** Executed flawless absolute CSS positioning (`top: '50%'`, `marginTop: -16`) to vertically center the avatar's plus badge exactly on the right equator.
+- **[Frontend Architecture]** Wired the "bloop!" button to securely fetch the encrypted JWT from SecureStore and POST the new profile payload to the backend.
+- **[Passcode UX]** Patched Android's empty-backspace native keyboard bug by wrapping the invisible PIN architecture in a `<TouchableWithoutFeedback>`, enabling an intuitive touch-to-focus escape hatch.
+- **[Passcode UX]** Implemented dynamic `editable={isPrimaryValid}` state locks to mathematically prevent users from interacting with the confirmation inputs before the primary inputs are satisfied.
+- **[Passcode Architecture]** Solved an asynchronous React Native `.focus()` race condition by queueing the auto-focus logic inside a 50ms `setTimeout` on the JavaScript event loop.
+- **[Passcode Layout]** Refactored core flexbox constraints: removed hardcoded margins and arbitrary min-heights, replacing them with a `flex: 1` container paired with a dynamic `marginBottom` to achieve pixel-perfect visual vertical centering.
