@@ -4,7 +4,7 @@ import {
     TouchableOpacity, ActivityIndicator, Alert
 } from 'react-native';
 import { router, Stack } from 'expo-router';
-import * as Contacts from 'expo-contacts';
+import * as Contacts from 'expo-contacts/legacy';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { BACKEND_URL } from '../constants/config';

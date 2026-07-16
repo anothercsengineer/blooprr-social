@@ -11,8 +11,8 @@ const applyPepper = (clientHash) => {
     return crypto.createHash('sha256').update(clientHash + pepper).digest('hex');
 }
 
-// 1. login endpoint
-router.post('/login', (req, res) => {
+// 1. check user endpoint
+router.post('/check-user', (req, res) => {
     const { phoneHash } = req.body;
 
     if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash)) return res.status(400).json({ error: 'Phone number is required!' });
@@ -20,16 +20,40 @@ router.post('/login', (req, res) => {
     const finalHash = applyPepper(phoneHash);
 
     // database check
-    db.get('SELECT id, bio, profile_pic_url, created_at FROM profiles WHERE phone_hash = ?', [finalHash], (err, user) => {
+    db.get('SELECT passcode_type FROM profiles WHERE phone_hash = ?', [finalHash], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Database error!' });
+
+        if (user) {
+            return res.json({ exists: true, passType: user.passcode_type });
+        } else {
+            return res.status(404).json({ exists: false, error: 'User not found! Please sign up.' });
+        }
+    });
+});
+
+// 2. secure login endpoint
+router.post('/login', (req, res) => {
+    const { phoneHash, pass } = req.body;
+
+    if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash) || !pass) return res.status(400).json({ error: 'Missing credentials!' });
+
+    const finalHash = applyPepper(phoneHash);
+
+    db.get('SELECT id, passcode_hash FROM profiles WHERE phone_hash = ?', [finalHash], async (err, user) => {
         if (err) return res.status(500).json({ error: 'Database error!' });
 
         if (user) {
             // user exists - generate token and log in
+            const isMatch = await bcrypt.compare(pass, user.passcode_hash);
+            if (!isMatch) {
+                return res.status(401).json({ error: 'Incorrect passcode!' });
+            }
+
             const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
-            return res.json({ message: 'Login successful', user, token: jwtToken, isNewUser: false });
+            return res.json({ message: 'Login successful', token: jwtToken });
         } else {
             // 404 error to redirect non-existing user to blip gate screen
-            return res.status(404).json({ error: 'User not found! Please sign up.' });
+            return res.status(404).json({ error: 'User not found!' });
         }
     });
 });

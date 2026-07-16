@@ -42,7 +42,7 @@ export default function LoginScreen() {
             );
 
             // backend talking
-            const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+            const response = await fetch(`${BACKEND_URL}/api/auth/check-user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phoneHash: clientHash }), 
@@ -50,12 +50,13 @@ export default function LoginScreen() {
 
             const data = await response.json();
 
-            if (response.ok) {
-                // for returning user, save the jwt token securely to the device
-                await SecureStore.setItemAsync('jwt', data.token);
-                console.log("Logged in successfully!");
-
-                router.replace('/home');
+            if (response.ok && data.exists) {
+                // routing returning user to passcode screen
+                console.log("User exists, routing to unlock...");
+                router.push({
+                    pathname: '/passcode',
+                    params: { phoneHash: clientHash, action: 'login', serverPassType: data.passType }
+                });
             } else if (response.status === 404) {
                 // for new user, redirect them to the blipgate screen
                 router.push({

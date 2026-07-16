@@ -10,10 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { BACKEND_URL } from '../constants/config';
 
 export default function PasscodeScreen() {
-    // we catch the variables passed from blipgate here!
-    const { phoneHash, blipkey } = useLocalSearchParams<{ phoneHash: string, blipkey: string }>();
+    // we catch the variables passed from blipgate or login here!
+    const { phoneHash, blipkey, action, serverPassType } = useLocalSearchParams<{ phoneHash: string, blipkey?: string, action?: string, serverPassType?: 'pin4' | 'pin6' | 'alpha' }>();
 
-    const [passType, setPassType] = useState<'pin4' | 'pin6' | 'alpha'>('pin4');
+    const [passType, setPassType] = useState<'pin4' | 'pin6' | 'alpha'>(serverPassType || 'pin4');
     const [pass, setPass] = useState('');
     const [showPass, setShowPass] = useState(false);
     const [confirmPass, setConfirmPass] = useState('');
@@ -59,33 +59,40 @@ export default function PasscodeScreen() {
         ? pass.length >= 8
         : pass.length === pinLength;
 
-    const isReady = passType === 'alpha'
-        ? pass.length >= 8 && pass === confirmPass
-        : pass.length == pinLength && pass === confirmPass;
+    const isReady = action === 'login'
+        ? isPrimaryValid
+        : (passType === 'alpha'
+            ? pass.length >= 8 && pass === confirmPass
+            : pass.length == pinLength && pass === confirmPass);
 
-    const handleCreateAccount = async () => {
+    const handleAction = async () => {
         if (!isReady || isLoading) return;
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+            const endpoint = action === 'login' ? '/api/auth/login' : '/api/auth/register';
+            const payload = action === 'login' 
+                ? { phoneHash, pass }
+                : { phoneHash, blipkey, pass, passType };
+
+            const response = await fetch(`${BACKEND_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phoneHash,
-                    blipkey,
-                    pass: pass,
-                    passType: passType
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // securely stores the jwt and sends them to home
+                // securely stores the jwt and sends them forward
                 await SecureStore.setItemAsync('jwt', data.token);
-                console.log("Signup successful! Blipkey burned and password secured.");
-                router.replace('/setup');
+                if (action === 'login') {
+                    console.log("Login successful! Passcode verified.");
+                    router.replace('/home');
+                } else {
+                    console.log("Signup successful! Blipkey burned and password secured.");
+                    router.replace('/setup');
+                }
             } else {
                 Alert.alert("Error:", data.error || "Something went wrong!");
             }
@@ -110,21 +117,27 @@ export default function PasscodeScreen() {
 
                         {/* middle content area */}
                         <View style={styles.content}>
-                            <Text style={styles.title}>pick your lock</Text>
-                            <Text style={styles.subtitle}>alphanumeric's the safest,{'\n'}but it's your call</Text>
+                            <Text style={styles.title}>
+                                {action === 'login' ? 'welcome back' : 'pick your lock'}
+                            </Text>
+                            <Text style={styles.subtitle}>
+                                {action === 'login' ? 'enter your passcode' : `alphanumeric's the safest,\nbut it's your call`}
+                            </Text>
 
                             {/* mode toggle row */}
-                            <View style={styles.toggleRow}>
-                                 <TouchableOpacity onPress={() => switchMode('pin4')} style={[styles.toggleButton, passType === 'pin4' && styles.toggleButtonActive]}>
-                                    <Text style={[styles.toggleText, passType === 'pin4' && styles.toggleTextActive]}>4-digit</Text>
-                                 </TouchableOpacity>
-                                 <TouchableOpacity onPress={() => switchMode('pin6')} style={[styles.toggleButton, passType === 'pin6' && styles.toggleButtonActive]}>
-                                    <Text style={[styles.toggleText, passType === 'pin6' && styles.toggleTextActive]}>6-digit</Text>
-                                 </TouchableOpacity>
-                                 <TouchableOpacity onPress={() => switchMode('alpha')} style={[styles.toggleButton, passType === 'alpha' && styles.toggleButtonActive]}>
-                                    <Text style={[styles.toggleText, passType === 'alpha' && styles.toggleTextActive]}>alpha-num</Text>
-                                 </TouchableOpacity>
-                            </View>
+                            {action !== 'login' && (
+                                <View style={styles.toggleRow}>
+                                     <TouchableOpacity onPress={() => switchMode('pin4')} style={[styles.toggleButton, passType === 'pin4' && styles.toggleButtonActive]}>
+                                        <Text style={[styles.toggleText, passType === 'pin4' && styles.toggleTextActive]}>4-digit</Text>
+                                     </TouchableOpacity>
+                                     <TouchableOpacity onPress={() => switchMode('pin6')} style={[styles.toggleButton, passType === 'pin6' && styles.toggleButtonActive]}>
+                                        <Text style={[styles.toggleText, passType === 'pin6' && styles.toggleTextActive]}>6-digit</Text>
+                                     </TouchableOpacity>
+                                     <TouchableOpacity onPress={() => switchMode('alpha')} style={[styles.toggleButton, passType === 'alpha' && styles.toggleButtonActive]}>
+                                        <Text style={[styles.toggleText, passType === 'alpha' && styles.toggleTextActive]}>alpha-num</Text>
+                                     </TouchableOpacity>
+                                </View>
+                            )}
 
                             {/* input area */}
                             {passType === 'alpha' ? (
@@ -137,8 +150,11 @@ export default function PasscodeScreen() {
                                         value={pass}
                                         onChangeText={handlePassChange}
                                         selectionColor="#00DCCA"
-                                        returnKeyType="next"
-                                        onSubmitEditing={() => confirmInputRef.current?.focus()}
+                                        returnKeyType={action === 'login' ? "done" : "next"}
+                                        onSubmitEditing={() => {
+                                            if (action === 'login') handleAction();
+                                            else confirmInputRef.current?.focus();
+                                        }}
                                         blurOnSubmit={false}
                                     />
                                     <TouchableOpacity 
@@ -187,47 +203,49 @@ export default function PasscodeScreen() {
                             <View style={{ height: 20 }} />
 
                             {/* confirm input area */}
-                            {passType === 'alpha' ? (
-                                <View style={[styles.inputContainer, !isPrimaryValid && { opacity: 0.3 }]}>
-                                    <TextInput
-                                        ref={confirmInputRef}
-                                        style={styles.alphaInput}
-                                        placeholder="confirm your passcode"
-                                        placeholderTextColor="#545757"
-                                        secureTextEntry={!showConfirmPass}
-                                        value={confirmPass}
-                                        onChangeText={handleConfirmPassChange}
-                                        selectionColor="#00DCCA"
-                                        returnKeyType="done"
-                                        onSubmitEditing={handleCreateAccount}
-                                        editable={isPrimaryValid}
-                                    />
-                                </View>
-                            ) : (
-                                <TouchableWithoutFeedback onPress={() => confirmInputRef.current?.focus()}>
-                                    <View style={[styles.pinWrapper, !isPrimaryValid && { opacity: 0.3 }]}>
-                                        <View style={styles.pinBoxesContainer}>
-                                            {Array.from({ length: pinLength }).map((_, i) => (
-                                                <View key={i} style={styles.pinBox}>
-                                                    <Text style={[styles.pinText, confirmPass[i] && styles.pinTextFilled]}>
-                                                        {confirmPass[i] ? (showConfirmPass ? confirmPass[i] : '✱') : '✱'}
-                                                    </Text>
-                                                </View>
-                                            ))}
-                                        </View>
-
+                            {action !== 'login' && (
+                                passType === 'alpha' ? (
+                                    <View style={[styles.inputContainer, !isPrimaryValid && { opacity: 0.3 }]}>
                                         <TextInput
                                             ref={confirmInputRef}
-                                            style={styles.hiddenInput}
-                                            keyboardType="number-pad"
-                                            maxLength={pinLength}
+                                            style={styles.alphaInput}
+                                            placeholder="confirm your passcode"
+                                            placeholderTextColor="#545757"
+                                            secureTextEntry={!showConfirmPass}
                                             value={confirmPass}
                                             onChangeText={handleConfirmPassChange}
-                                            caretHidden={true}
+                                            selectionColor="#00DCCA"
+                                            returnKeyType="done"
+                                            onSubmitEditing={handleAction}
                                             editable={isPrimaryValid}
                                         />
                                     </View>
-                                </TouchableWithoutFeedback>
+                                ) : (
+                                    <TouchableWithoutFeedback onPress={() => confirmInputRef.current?.focus()}>
+                                        <View style={[styles.pinWrapper, !isPrimaryValid && { opacity: 0.3 }]}>
+                                            <View style={styles.pinBoxesContainer}>
+                                                {Array.from({ length: pinLength }).map((_, i) => (
+                                                    <View key={i} style={styles.pinBox}>
+                                                        <Text style={[styles.pinText, confirmPass[i] && styles.pinTextFilled]}>
+                                                            {confirmPass[i] ? (showConfirmPass ? confirmPass[i] : '✱') : '✱'}
+                                                        </Text>
+                                                    </View>
+                                                ))}
+                                            </View>
+    
+                                            <TextInput
+                                                ref={confirmInputRef}
+                                                style={styles.hiddenInput}
+                                                keyboardType="number-pad"
+                                                maxLength={pinLength}
+                                                value={confirmPass}
+                                                onChangeText={handleConfirmPassChange}
+                                                caretHidden={true}
+                                                editable={isPrimaryValid}
+                                            />
+                                        </View>
+                                    </TouchableWithoutFeedback>
+                                )
                             )}
                         </View>
 
@@ -235,12 +253,12 @@ export default function PasscodeScreen() {
                         <View style={styles.bottomArea}>
                             <TouchableOpacity
                                 style={[styles.button, (!isReady || isLoading) ? styles.buttonInactive : styles.buttonActive]}
-                                onPress={handleCreateAccount}
+                                onPress={handleAction}
                                 disabled={!isReady || isLoading}
                                 activeOpacity={0.8}
                             >
                                 <Text style={[styles.buttonText, isReady && !isLoading ? styles.buttonTextActive : styles.buttonTextInactive]}>
-                                    {isLoading ? "securing..." : "secure"}
+                                    {isLoading ? (action === 'login' ? "unlocking..." : "securing...") : (action === 'login' ? "unlock" : "secure")}
                                 </Text>
                             </TouchableOpacity>
                         </View>
