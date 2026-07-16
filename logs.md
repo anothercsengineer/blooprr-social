@@ -317,3 +317,18 @@
 - **[Backend Debugging]** Fixed a silent JSON parsing crash masquerading as a `Network Error` by correcting a routing mismatch (`/api/profile` -> `/api/profiles`), definitively matching the Express mount path.
 - **[Frontend UI Polish]** Polished visual constraints in `setup.tsx` by locking the `bioInput` width to `85%`, achieving perfect vertical column alignment with the primary action button.
 - **[Passcode UX]** Resolved a critical UX keyboard trap in `passcode.tsx` by binding the confirmation row's `TouchableWithoutFeedback` directly to `confirmInputRef.current?.focus()`, restoring full dual-row interactivity.
+
+---
+
+# *Chronological record of the v0.10.0-alpha minor update cycle*
+
+## Session 22: Advanced Home Screen & Authentication Hardening
+*Goal: Build the primary empty-state feed and aggressively secure the backend authentication protocols.*
+
+- **[Frontend Architecture]** Created `home.tsx` featuring a complete empty-state layout that mathematically mirrors the dark-mode UI design.
+- **[Frontend UI Polish]** Engineered a custom bottom navigation bar anchored by a pill-shaped action button, circumventing standard Expo router tab UI restrictions.
+- **[Backend Security]** Executed a major security refactor in `auth.js` by intercepting a severe authentication bypass vulnerability. Replaced the simplistic `phoneHash` validator with a secure `bcrypt.compare` execution against the raw `passcode`.
+- **[Backend Security]** Engineered the `/api/auth/check-user` reconnaissance endpoint to safely fetch user status and `passcode_type` without prematurely issuing JSON Web Tokens.
+- **[Frontend Routing]** Refactored `login.tsx` to utilize the new reconnaissance endpoint, safely routing returning users directly to the passcode screen via secure parameter injection.
+- **[Frontend Architecture]** Upgraded `passcode.tsx` into a complex, dual-purpose screen. Built dynamic UI logic that conditionally hides registration elements and modifies text states when detecting an `action === 'login'` parameter.
+- **[DevOps Hotfix]** Fixed a fatal crash on the contacts sync screen caused by an Expo SDK 52 deprecation warning escalating into a caught exception. Bypassed the crash by switching to the `expo-contacts/legacy` native import.
