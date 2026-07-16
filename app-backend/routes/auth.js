@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const authenticateToken = require('../middleware/jwt');
 
 const applyPepper = (clientHash) => {
@@ -34,61 +35,72 @@ router.post('/login', (req, res) => {
 });
 
 // 2. register endpoint
-router.post('/register', (req, res) => {
-    const { phoneHash, blipkey } = req.body;
+router.post('/register', async (req, res) => {
+    const { phoneHash, blipkey, pass, passType } = req.body;
 
-    if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash) || !blipkey || !/^blp-[a-z]{3}-[a-z]{3}$/.test(blipkey)) {
-        return res.status(400).json({ error: 'Phone hash and Blipkey required!' });
+    if (!phoneHash || !/^[a-f0-9]{64}$/.test(phoneHash) || !blipkey || !/^blp-[a-z]{3}-[a-z]{3}$/.test(blipkey) || !pass || !passType) {
+        return res.status(400).json({ error: 'Missing or invalid fields!' });
     }
     
     const finalHash = applyPepper(phoneHash);
 
-    // atomic transaction
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
+    try {
+        // hash the passcode safely using bcrypt before logging in the database
+        const salt = await bcrypt.genSalt(10);
+        const passHash = await bcrypt.hash(pass, salt);
 
-        // updating the key first so that it is certain no one else claimed it, also block expired keys
-        db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
-        [finalHash, blipkey], function(err) {
-            if (err) {
-                db.run('ROLLBACK');
-                return res.status(500).json({ error: 'Database error' });
-            }
+        // atomic transaction
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
 
-            // checking if key entered is fake, already used or expired
-            if (this.changes === 0) {
-                db.run('ROLLBACK');
-                return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
-            }
-
-            // create new user (if failed, rollback is done to prevent blipkey burning)
-            db.run('INSERT INTO profiles (phone_hash) VALUES (?)', [finalHash], function(insertErr) {
-                if (insertErr) {
+            // updating the key first so that it is certain no one else claimed it, also block expired keys
+            db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
+            [finalHash, blipkey], function(err) {
+                if (err) {
                     db.run('ROLLBACK');
-                    return res.status(500).json({ error: 'Could not create user or user already exists!' });
+                    return res.status(500).json({ error: 'Database error' });
                 }
-                
-                const newUserId = this.lastID;
 
-                db.run('COMMIT', (commitErr) => {
-                    if (commitErr) {
-                        db.run('ROLLBACK'); // prevents global deadlock
-                        return res.status(500).json({ error: 'Transaction commit failed!' });
+                // checking if key entered is fake, already used or expired
+                if (this.changes === 0) {
+                    db.run('ROLLBACK');
+                    return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
+                }
+
+                // create new user (if failed, rollback is done to prevent blipkey burning)
+                db.run('INSERT INTO profiles (phone_hash, passcode_hash, passcode_type) VALUES (?, ?, ?)',
+                [finalHash, passHash, passType], function(insertErr) {
+                    if (insertErr) {
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: 'Could not create user or user already exists!' });
                     }
-                    // assign jwt and return
-                    const newUser = { id: newUserId, bio: '', profile_pic_url: null };
-                    const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
+                    
+                    const newUserId = this.lastID;
 
-                    return res.json({ 
-                        message: 'Sign-up successful!', 
-                        user: newUser, 
-                        token: jwtToken, 
-                        isNewUser: true 
+                    db.run('COMMIT', (commitErr) => {
+                        if (commitErr) {
+                            db.run('ROLLBACK'); // prevents global deadlock
+                            return res.status(500).json({ error: 'Transaction commit failed!' });
+                        }
+
+                        // assign jwt and return
+                        const newUser = { id: newUserId, bio: '', profile_pic_url: null };
+                        const jwtToken = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
+
+                        return res.json({ 
+                            message: 'Sign-up successful!', 
+                            user: newUser, 
+                            token: jwtToken, 
+                            isNewUser: true 
+                        });
                     });
                 });
             });
         });
-    });
+    } catch (hashError) {
+        console.error("Hashing error:", hashError);
+        return res.status(500).json({ error: 'Failed to secure passcode.' });
+    }
 });
 
 // 3. fetch the active my blipkeys endpoint
@@ -107,6 +119,26 @@ router.get('/my-blipkey', authenticateToken, (req, res) => {
             res.json({ hasKey: true, key: row.key, expiry: row.expiry });
         } else {
             res.json({ hasKey: false });
+        }
+    });
+});
+
+// check if a blipkey is valid before letting them set a passcode
+router.post('/check-blipkey', (req, res) => {
+    const { blipkey } = req.body;
+
+    if (!blipkey) {
+        return res.status(400).json({ error: 'Blipkey is required!' });
+    }
+
+    db.get('SELECT id FROM blipkeys WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
+    [blipkey], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Database error!' });
+
+        if (row) {
+            res.json({ valid: true });
+        } else {
+            res.status(400).json({ error: 'Invalid, used, or expired Blipkey!' });
         }
     });
 });

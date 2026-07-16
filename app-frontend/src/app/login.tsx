@@ -245,13 +245,14 @@ const styles = StyleSheet.create({
     },
         termsText: {
         color: '#757575',
-        fontSize: 14,
+        fontSize: 16,
         flex: 1,
         fontFamily: 'System',
     },
     termsLink: {
         color: '#00DCCA',
         fontWeight: 'bold',
+        textDecorationLine: 'underline',
     },
     button: {
         paddingVertical: 14,

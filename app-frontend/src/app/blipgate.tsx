@@ -49,7 +49,8 @@ export default function BlipkeyScreen() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+            // check the key without burning it already
+            const response = await fetch(`${BACKEND_URL}/api/auth/check-blipkey`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phoneHash, blipkey }),
@@ -57,14 +58,17 @@ export default function BlipkeyScreen() {
 
             const data = await response.json();
 
-            if (response.ok) {
-                await SecureStore.setItemAsync('jwt', data.token);
-                console.log("Signup successful! Blipkey burned.");
+            if (response.ok && data.valid) {
+                console.log("Blipkey is valid. Moving to passcode screen...");
 
-                router.replace('./home')
+                // route to the new passcode screen
+                router.push({
+                    pathname: '/passcode',
+                    params: { phoneHash, blipkey }
+                });
             } else {
                 // displays the 400 error from the backend
-                Alert.alert("Error:", data.error || "Something went wrong.");
+                Alert.alert("Error:", data.error || "Invalid Blipkey!");
             }
 
         } catch (error) {

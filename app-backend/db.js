@@ -30,6 +30,10 @@ db.serialize(() => {
         CREATE TABLE IF NOT EXISTS profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             phone_hash TEXT UNIQUE NOT NULL,
+            passcode_hash TEXT NOT NULL,
+            failed_attempts INTEGER DEFAULT 0,
+            locked_until DATETIME NULL,
+            passcode_type TEXT NOT NULL,
             bio TEXT DEFAULT '',
             profile_pic_url TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
