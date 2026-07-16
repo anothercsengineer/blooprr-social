@@ -42,6 +42,9 @@ app.use('/api/auth', authRoutes);
 const contactsRoutes = require('./routes/contacts');
 app.use('/api/contacts', contactsRoutes);
 
+const profileRoutes = require('./routes/profiles');
+app.use('/api/profiles', profileRoutes);
+
 // test route
 app.get('/api/health', (req, res) => {
     res.json({ message: 'Welcome to the blooprr API!' });

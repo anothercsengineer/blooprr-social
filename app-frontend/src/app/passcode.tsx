@@ -20,6 +20,7 @@ export default function PasscodeScreen() {
     const [showConfirmPass, setShowConfirmPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const confirmInputRef = useRef<TextInput>(null);
+    const primaryInputRef = useRef<TextInput>(null);
 
     // dynamic pin length calculation
     const pinLength = passType === 'pin4' ? 4 : 6;
@@ -37,7 +38,10 @@ export default function PasscodeScreen() {
             const cleaned = text.replace(/[^0-9]/g, '');
             setPass(cleaned); // strips out letters/symbols for PINs
             if (cleaned.length === pinLength) {
-                confirmInputRef.current?.focus();
+                // queue the focus event
+                setTimeout (() => {
+                    confirmInputRef.current?.focus();
+                }, 50);
             }
         }
     };
@@ -51,6 +55,10 @@ export default function PasscodeScreen() {
     };
 
     // validation
+    const isPrimaryValid = passType === 'alpha'
+        ? pass.length >= 8
+        : pass.length === pinLength;
+
     const isReady = passType === 'alpha'
         ? pass.length >= 8 && pass === confirmPass
         : pass.length == pinLength && pass === confirmPass;
@@ -77,7 +85,7 @@ export default function PasscodeScreen() {
                 // securely stores the jwt and sends them to home
                 await SecureStore.setItemAsync('jwt', data.token);
                 console.log("Signup successful! Blipkey burned and password secured.");
-                router.replace('/home');
+                router.replace('/setup');
             } else {
                 Alert.alert("Error:", data.error || "Something went wrong!");
             }
@@ -103,7 +111,7 @@ export default function PasscodeScreen() {
                         {/* middle content area */}
                         <View style={styles.content}>
                             <Text style={styles.title}>pick your lock</Text>
-                            <Text style={styles.subtitle}>alphanumeric's the safest,{'\n'}but it's your call!</Text>
+                            <Text style={styles.subtitle}>alphanumeric's the safest,{'\n'}but it's your call</Text>
 
                             {/* mode toggle row */}
                             <View style={styles.toggleRow}>
@@ -142,42 +150,45 @@ export default function PasscodeScreen() {
                                 </View>
                             ) : (
                                 // custom reference ui for the pins
-                                <View style={styles.pinWrapper}>
-                                    <View style={styles.pinBoxesContainer}>
-                                        {Array.from({ length: pinLength }).map((_, i) => (
-                                            <View key={i} style={styles.pinBox}>
-                                                <Text style={[styles.pinText, pass[i] && styles.pinTextFilled]}>
-                                                    {pass[i] ? (showPass ? pass[i] : '✱') : '✱'}
-                                                </Text>
-                                            </View>
-                                        ))}
+                                <TouchableWithoutFeedback onPress={() => primaryInputRef.current?.focus()}>
+                                    <View style={styles.pinWrapper}>
+                                        <View style={styles.pinBoxesContainer}>
+                                            {Array.from({ length: pinLength }).map((_, i) => (
+                                                <View key={i} style={styles.pinBox}>
+                                                    <Text style={[styles.pinText, pass[i] && styles.pinTextFilled]}>
+                                                        {pass[i] ? (showPass ? pass[i] : '✱') : '✱'}
+                                                    </Text>
+                                                </View>
+                                            ))}
+                                        </View>
+
+                                        {/* invisible architecture */}
+                                        <TextInput
+                                            style={styles.hiddenInput}
+                                            keyboardType="number-pad"
+                                            maxLength={pinLength}
+                                            value={pass}
+                                            onChangeText={handlePassChange}
+                                            caretHidden={true}
+                                            ref={primaryInputRef}
+                                        />
+
+                                        {/* eye button */}
+                                        <TouchableOpacity 
+                                            style={styles.eyeButtonPin} 
+                                            onPress={() => setShowPass(!showPass)}
+                                        >
+                                            <Ionicons name={showPass ? 'eye-off' : 'eye'} size={24} color="#00DCCA" />
+                                        </TouchableOpacity>
                                     </View>
-
-                                    {/* invisible architecture */}
-                                    <TextInput
-                                        style={styles.hiddenInput}
-                                        keyboardType="number-pad"
-                                        maxLength={pinLength}
-                                        value={pass}
-                                        onChangeText={handlePassChange}
-                                        caretHidden={true}
-                                    />
-
-                                    {/* eye button */}
-                                    <TouchableOpacity 
-                                        style={styles.eyeButtonPin} 
-                                        onPress={() => setShowPass(!showPass)}
-                                    >
-                                        <Ionicons name={showPass ? 'eye-off' : 'eye'} size={24} color="#00DCCA" />
-                                    </TouchableOpacity>
-                                </View>
+                                </TouchableWithoutFeedback>
                             )}
 
                             <View style={{ height: 20 }} />
 
                             {/* confirm input area */}
                             {passType === 'alpha' ? (
-                                <View style={styles.inputContainer}>
+                                <View style={[styles.inputContainer, !isPrimaryValid && { opacity: 0.3 }]}>
                                     <TextInput
                                         ref={confirmInputRef}
                                         style={styles.alphaInput}
@@ -189,31 +200,34 @@ export default function PasscodeScreen() {
                                         selectionColor="#00DCCA"
                                         returnKeyType="done"
                                         onSubmitEditing={handleCreateAccount}
+                                        editable={isPrimaryValid}
                                     />
                                 </View>
                             ) : (
-                                <View style={styles.pinWrapper}>
-                                    <View style={styles.pinBoxesContainer}>
-                                        {Array.from({ length: pinLength }).map((_, i) => (
-                                            <View key={i} style={styles.pinBox}>
-                                                <Text style={[styles.pinText, confirmPass[i] && styles.pinTextFilled]}>
-                                                    {confirmPass[i] ? (showConfirmPass ? confirmPass[i] : '✱') : '✱'}
-                                                </Text>
-                                            </View>
-                                        ))}
+                                <TouchableWithoutFeedback onPress={() => primaryInputRef.current?.focus()}>
+                                    <View style={[styles.pinWrapper, !isPrimaryValid && { opacity: 0.3 }]}>
+                                        <View style={styles.pinBoxesContainer}>
+                                            {Array.from({ length: pinLength }).map((_, i) => (
+                                                <View key={i} style={styles.pinBox}>
+                                                    <Text style={[styles.pinText, confirmPass[i] && styles.pinTextFilled]}>
+                                                        {confirmPass[i] ? (showConfirmPass ? confirmPass[i] : '✱') : '✱'}
+                                                    </Text>
+                                                </View>
+                                            ))}
+                                        </View>
+
+                                        <TextInput
+                                            ref={confirmInputRef}
+                                            style={styles.hiddenInput}
+                                            keyboardType="number-pad"
+                                            maxLength={pinLength}
+                                            value={confirmPass}
+                                            onChangeText={handleConfirmPassChange}
+                                            caretHidden={true}
+                                            editable={isPrimaryValid}
+                                        />
                                     </View>
-
-                                    <TextInput
-                                        ref={confirmInputRef}
-                                        style={styles.hiddenInput}
-                                        keyboardType="number-pad"
-                                        maxLength={pinLength}
-                                        value={confirmPass}
-                                        onChangeText={handleConfirmPassChange}
-                                        caretHidden={true}
-                                    />
-
-                                </View>
+                                </TouchableWithoutFeedback>
                             )}
                         </View>
 
@@ -255,8 +269,10 @@ const styles = StyleSheet.create({
         height: 50,
     },
     content: {
+        flex: 1,
         alignItems: 'center',
-        marginTop: -40,
+        justifyContent: 'center',
+        marginBottom: 40,
     },
     title: {
         color: '#FFFFFF',
@@ -371,7 +387,6 @@ const styles = StyleSheet.create({
     },
     bottomArea: {
         width: '100%',
-        minHeight: 140,
         justifyContent: 'flex-end',
     },
     button: {

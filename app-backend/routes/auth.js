@@ -53,30 +53,31 @@ router.post('/register', async (req, res) => {
         db.serialize(() => {
             db.run('BEGIN TRANSACTION');
 
-            // updating the key first so that it is certain no one else claimed it, also block expired keys
-            db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
-            [finalHash, blipkey], function(err) {
-                if (err) {
+            // i. create new user first (if failed, rollback is done to prevent blipkey burning)
+            db.run('INSERT INTO profiles (phone_hash, passcode_hash, passcode_type) VALUES (?, ?, ?)',
+            [finalHash, passHash, passType], function(insertErr) {
+                if (insertErr) {
                     db.run('ROLLBACK');
-                    return res.status(500).json({ error: 'Database error' });
+                    return res.status(500).json({ error: 'Could not create user or user already exists!' });
                 }
+                
+                const newUserId = this.lastID;
 
-                // checking if key entered is fake, already used or expired
-                if (this.changes === 0) {
-                    db.run('ROLLBACK');
-                    return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
-                }
-
-                // create new user (if failed, rollback is done to prevent blipkey burning)
-                db.run('INSERT INTO profiles (phone_hash, passcode_hash, passcode_type) VALUES (?, ?, ?)',
-                [finalHash, passHash, passType], function(insertErr) {
-                    if (insertErr) {
+                // ii. updating the key so that it is certain no one else claimed it, also block expired keys
+                db.run('UPDATE blipkeys SET status = 1, redeemer_hash = ? WHERE key = ? AND status = 0 AND datetime(expiry) > datetime(\'now\')',
+                [finalHash, blipkey], function(err) {
+                    if (err) {
                         db.run('ROLLBACK');
-                        return res.status(500).json({ error: 'Could not create user or user already exists!' });
+                        return res.status(500).json({ error: 'Database error!' });
+                    }
+
+                    // checking if key entered is fake, already used or expired
+                    if (this.changes === 0) {
+                        db.run('ROLLBACK');
+                        return res.status(400).json({ error: 'Invalid, expired or used Blipkey!' });
                     }
                     
-                    const newUserId = this.lastID;
-
+                    // iii. commit the transaction permanently to database
                     db.run('COMMIT', (commitErr) => {
                         if (commitErr) {
                             db.run('ROLLBACK'); // prevents global deadlock
@@ -99,7 +100,7 @@ router.post('/register', async (req, res) => {
         });
     } catch (hashError) {
         console.error("Hashing error:", hashError);
-        return res.status(500).json({ error: 'Failed to secure passcode.' });
+        return res.status(500).json({ error: 'Failed to secure passcode!' });
     }
 });
 
@@ -113,7 +114,7 @@ router.get('/my-blipkey', authenticateToken, (req, res) => {
         FROM blipkeys
         WHERE bearer = ? AND status = 0 AND redeemer_hash IS NULL AND datetime(expiry) > dateTime('now')
     `, [profileId], (err, row) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
+        if (err) return res.status(500).json({ error: 'Database error!' });
 
         if (row) {
             res.json({ hasKey: true, key: row.key, expiry: row.expiry });
