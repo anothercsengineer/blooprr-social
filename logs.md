@@ -257,3 +257,24 @@
 - **[Logic Flaw]** Resolved a major ISO-8601 string-comparison bug in `auth.js` by wrapping the `expiry` column in SQLite's native `datetime()` function, fixing broken same-day expiration logic.
 - **[DevOps]** Added the missing `bundleIdentifier` to `app.json` to prevent catastrophic iOS build failures in EAS.
 - **[Frontend Stability]** Converted a relative routing path in `blipgate.tsx` to an absolute path (`/home`) to future-proof against route grouping crashes.
+
+---
+
+# *Chronological record of the v0.7.0-alpha minor update cycle*
+
+## Session 19: Tri-Mode Passcode System & UX Polish
+*Goal: Implement a highly secure, interactive, tri-mode passcode system on the frontend and finalize the backend authentication routes.*
+
+- **[Backend Stability]** Fixed a fatal syntax error in `auth.js` by wrapping the `/register` route in an `async` handler, preventing immediate server crashes during hash generation.
+- **[Database Stability]** Resolved an SQL insertion parameter mismatch in the `auth.js` register endpoint, aligning the query signature to accept the `pass_type` parameter.
+- **[Data Integrity]** Standardized the payload naming conventions (`pass` and `passType`) between `passcode.tsx` and the `auth.js` backend to prevent "missing field" rejections.
+- **[Frontend Routing]** Fixed a critical routing typo in `blipgate.tsx` ensuring the app reliably pushes to `'/passcode'`.
+- **[Frontend Architecture]** Engineered a robust, dynamic tri-mode passcode system (`pin4`, `pin6`, `alpha`) featuring real-time tab switching and state management.
+- **[UI/UX Polish]** Built an invisible `<TextInput>` architecture for the PIN modes that manages native keyboard focus while updating custom-designed visual PIN boxes.
+- **[Input Validation]** Implemented strict regex sanitization (`/[^0-9]/g`) on the PIN entry fields to aggressively strip any alphanumeric characters accidentally pasted or entered via physical keyboards.
+- **[Security/UX]** Engineered dual confirmation input rows for all three security modes with strict `pass === confirmPass` validation locks on the primary action button.
+- **[Frontend Polish]** Standardized layout spacing and exact pixel heights (`65px`) across input containers to definitively eliminate flexbox visual layout shift ("bouncing") when toggling between passcode modes.
+- **[Frontend Polish]** Replaced text-based toggles with native `Ionicons` for the password visibility `eye` buttons, completely isolating their positioning with `absolute` logic to prevent component overlap.
+- **[Frontend Polish]** Polished the `eyeButtonPin` with `paddingTop` for perfect visual alignment with the cyan bottom borders of the PIN boxes, and added `paddingRight` to `alphaInput` to prevent text overlap.
+- **[Advanced UX]** Engineered seamless keyboard routing for PIN modes: dynamically triggering `confirmInputRef.current.focus()` the exact millisecond the user reaches the `pinLength` limit.
+- **[Advanced UX]** Upgraded Alpha mode keyboard navigation by implementing `returnKeyType="next"` and `"done"` combined with `onSubmitEditing`, enabling flawless progression from the primary input to the confirmation input, and finally triggering account creation.
