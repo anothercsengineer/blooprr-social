@@ -46,7 +46,7 @@ export default function SetupScreen() {
         try {
             const token = await SecureStore.getItemAsync('jwt');
 
-            const response = await fetch(`${BACKEND_URL}/api/profile/setup`, {
+            const response = await fetch(`${BACKEND_URL}/api/profiles/setup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export default function SetupScreen() {
 
             if (response.ok) {
                 console.log("Profile successfully configured!");
-                router.replace('/home');
+                router.replace('/sync');
             } else {
                 const data = await response.json();
                 Alert.alert("Error:", data.error || "Could not save profile!");
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 44,
+        marginBottom: 42,
     },
     title: {
         color: '#FFFFFF',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         borderWidth: 1,
         borderColor: '#00DCCA',
-        width: '100%',
+        width: '85%',
         height: 150,
         padding: 20,
     },

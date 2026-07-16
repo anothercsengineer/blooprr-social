@@ -204,7 +204,7 @@ export default function PasscodeScreen() {
                                     />
                                 </View>
                             ) : (
-                                <TouchableWithoutFeedback onPress={() => primaryInputRef.current?.focus()}>
+                                <TouchableWithoutFeedback onPress={() => confirmInputRef.current?.focus()}>
                                     <View style={[styles.pinWrapper, !isPrimaryValid && { opacity: 0.3 }]}>
                                         <View style={styles.pinBoxesContainer}>
                                             {Array.from({ length: pinLength }).map((_, i) => (
