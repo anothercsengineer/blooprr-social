@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { 
     StyleSheet, Text, TextInput, View, Alert,
     KeyboardAvoidingView, Keyboard, Platform, Image,
-    TouchableOpacity, TouchableWithoutFeedback
+    TouchableOpacity, TouchableWithoutFeedback, BackHandler
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -21,6 +21,16 @@ export default function PasscodeScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const confirmInputRef = useRef<TextInput>(null);
     const primaryInputRef = useRef<TextInput>(null);
+
+    // locking the hardware back button on Android
+    useEffect(() => {
+        const backAction = () => {
+            BackHandler.exitApp();
+            return true;
+        };
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, []);
 
     // dynamic pin length calculation
     const pinLength = passType === 'pin4' ? 4 : 6;
@@ -56,7 +66,7 @@ export default function PasscodeScreen() {
 
     // validation
     const isPrimaryValid = passType === 'alpha'
-        ? pass.length >= 8
+        ? pass.length >= 8 && /[a-zA-Z]/.test(pass) && /[0-9]/.test(pass)
         : pass.length === pinLength;
 
     const isReady = action === 'login'
@@ -88,25 +98,27 @@ export default function PasscodeScreen() {
                 await SecureStore.setItemAsync('jwt', data.token);
                 if (action === 'login') {
                     console.log("Login successful! Passcode verified.");
+                    router.dismissAll(); // nukes the entire backstack
                     router.replace('/home');
                 } else {
                     console.log("Signup successful! Blipkey burned and password secured.");
+                    router.dismissAll(); // nukes the entire backstack
                     router.replace('/setup');
                 }
             } else {
                 Alert.alert("Error:", data.error || "Something went wrong!");
+                setIsLoading(false);
             }
         } catch (error) {
             console.error("Could not connect to backend!", error);
             Alert.alert("Network Error:", "Could not connect to the blooprr servers!");
-        } finally {
             setIsLoading(false);
         }
     };
 
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
+            <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <View style={styles.container}>

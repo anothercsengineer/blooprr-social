@@ -25,10 +25,17 @@ export default function LoginScreen() {
         setPhoneNumber(formatted);
     }
 
-    // validation: processing allowed only when 10 digits are entered and box is checked
+    // validation: processing allowed only when 10 valid indian mobile digits are entered, and it's not a repeating sequence
     const cleanNumber = useMemo (() => phoneNumber.replace(/\D/g, ''), [phoneNumber]);
-    const isValidNumber = useMemo (() => cleanNumber.length >= 10, [cleanNumber]);
+    const isValidNumber = useMemo (() => /^[6-9]\d{9}$/.test(cleanNumber) && !/^(.)\1{9}$/.test(cleanNumber), [cleanNumber]);
     const canProceed =  isValidNumber && agreed;
+
+    const errorMessage = useMemo(() => {
+        if (cleanNumber.length !== 10) return null;
+        if (!/^[6-9]/.test(cleanNumber[0])) return "that's not a valid phone number";
+        if (/^(.)\1{9}$/.test(cleanNumber)) return "nope, that doesn't seem right";
+        return null;
+    }, [cleanNumber]);
 
     const handleProceed = async () => {
         if (isLoading) return;
@@ -112,6 +119,9 @@ export default function LoginScreen() {
                                     selectionColor="#00DCCA"
                                 />
                             </View>
+                            <Text style={styles.errorText}>
+                                {errorMessage || ' '}
+                            </Text>
                         </View>
 
                         {/* bottom area */}
@@ -212,6 +222,13 @@ const styles = StyleSheet.create({
         fontFamily: 'CalSans',
         paddingTop: 0,
         paddingBottom: 0,
+    },
+    errorText: {
+        color: '#FF4444',
+        fontSize: 16,
+        fontFamily: 'CalSans',
+        marginTop: 15,
+        minHeight: 20,
     },
     bottomArea: {
         width: '100%',

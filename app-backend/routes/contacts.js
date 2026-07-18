@@ -17,8 +17,8 @@ router.post('/sync', authenticateToken, (req, res) => {
     }
 
     // payload size validation
-    if (contactHashes.length > 500) {
-        return res.status(413).json({ error: 'Payload too large. Maximum 500 contacts allowed per sync.' });
+    if (contactHashes.length > 2000) {
+        return res.status(413).json({ error: 'Payload too large. Maximum 2000 contacts allowed per sync.' });
     }
 
     // SQL syntax crash prevention if 0 contacts are uploaded
@@ -65,22 +65,37 @@ router.post('/sync', authenticateToken, (req, res) => {
 
         const myPhoneHash = user.phone_hash;
 
-        // finding users who: have an account, are in the contact list uploaded and also have the mutual users phone number
-        const placeholders = secureContactHashes.map(() => '?').join(',');
-        const query = `
-            SELECT profiles.id
-            FROM profiles
-            JOIN mutuals ON profiles.id = mutuals.owner_id
-            WHERE profiles.phone_hash IN (${placeholders})
-            AND mutuals.contact_phone_hash = ?
-            AND profiles.id != ?
-        `;
+        // chunking the hashes into batches of 500 to prevent SQLITE_MAX_VARIABLE_NUMBER crash
+        const chunkSize = 500;
+        const chunks = [];
+        for (let i = 0; i < secureContactHashes.length; i += chunkSize) {
+            chunks.push(secureContactHashes.slice(i, i + chunkSize));
+        }
 
-        // query parameters are all the hash phone numbers the user uploaded, their own hash, and their profile ID
-        const params = [...secureContactHashes, myPhoneHash, parsedProfileId];
-        
-        db.all(query, params, (err, mutualProfiles) => {
-            if (err) return res.status(500).json({ error: 'Error finding mutuals' });
+        try {
+            const allMutualProfiles = [];
+
+            // executing each chunk as a promise
+            for (const chunk of chunks) {
+                const rows = await new Promise((resolve, reject) => {
+                    const placeholders = chunk.map(() => '?').join(',');
+                    const query =`
+                        SELECT profiles.id
+                        FROM profiles
+                        JOIN mutuals ON profiles.id = mutuals.owner_id
+                        WHERE profiles.phone_hash IN (${placeholders})
+                        AND mutuals.contact_phone_hash = ?
+                        AND profiles.id != ?
+                    `;
+                    const params = [...chunk, myPhoneHash, parsedProfileId];
+
+                    db.all(query, params, (err, rows) => {
+                        if (err) reject(err);
+                        else resolve(rows);
+                    });
+                });
+                allMutualProfiles.push(...rows);
+            }
 
             const newConnections = [];
 
@@ -114,7 +129,11 @@ router.post('/sync', authenticateToken, (req, res) => {
                     });
                 });
             });
-        });
+
+        }  catch (queryErr) {
+            console.error("Query error:", queryErr);
+            return res.status(500).json({ error: 'Failed to chunk contacts and find mutuals!' });
+        }
     });
 });
 

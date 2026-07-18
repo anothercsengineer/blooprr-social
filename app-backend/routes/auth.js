@@ -42,18 +42,23 @@ router.post('/login', (req, res) => {
     db.get('SELECT id, passcode_hash FROM profiles WHERE phone_hash = ?', [finalHash], async (err, user) => {
         if (err) return res.status(500).json({ error: 'Database error!' });
 
-        if (user) {
-            // user exists - generate token and log in
-            const isMatch = await bcrypt.compare(pass, user.passcode_hash);
-            if (!isMatch) {
-                return res.status(401).json({ error: 'Incorrect passcode!' });
-            }
+        try {
+            if (user) {
+                // user exists - generate token and log in
+                const isMatch = await bcrypt.compare(pass, user.passcode_hash);
+                if (!isMatch) {
+                    return res.status(401).json({ error: 'Incorrect passcode!' });
+                }
 
-            const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
-            return res.json({ message: 'Login successful', token: jwtToken });
-        } else {
-            // 404 error to redirect non-existing user to blip gate screen
-            return res.status(404).json({ error: 'User not found!' });
+                const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1y' });
+                return res.json({ message: 'Login successful', token: jwtToken });
+            } else {
+                // 404 error to redirect non-existing user to blip gate screen
+                return res.status(404).json({ error: 'User not found!' });
+            }
+        } catch (authError) {
+            console.error("Login verification error:", authError);
+            return res.status(500).json({ error: 'Internal server error during login!' });
         }
     });
 });

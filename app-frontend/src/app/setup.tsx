@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     StyleSheet, Text, TextInput, View, Alert,
     KeyboardAvoidingView, Keyboard, Platform, Image,
-    TouchableOpacity, TouchableWithoutFeedback 
+    TouchableOpacity, TouchableWithoutFeedback, BackHandler
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -16,29 +16,49 @@ export default function SetupScreen() {
     const [pfpUri, setPfpUri] = useState<string | null>(null);
     const [pfpBase64, setpfpBase64] = useState<string | null>(null);
 
+    useEffect(() => {
+        const backAction = () => {
+            BackHandler.exitApp();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+        return () => backHandler.remove();
+    }, []);
+
     const pickPfp = async () => {
-        // asking native os for gallery permissions
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        if (permissionResult.granted === false) {
-            Alert.alert("Permission Required:", "blooprr needs to access to your gallery to set a profile picture!")
-            return;
-        }
+        try {
+            // asking native os for gallery permissions
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        // launching the gallery
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1], // force a perfect square crop
-            quality: 0.5,   // compress the image to save bandwidth
-            base64: true,   // encode as a string so we can easily send it via json
-        });
+            if (permissionResult.granted === false) {
+                Alert.alert("Permission Required:", "We need access to your gallery to set a profile picture!")
+                return;
+            }
 
-        // saving the image to state
-        if (!result.canceled && result.assets[0].base64) {
-            // formatting it into a data URI so the image component can read it
-            setPfpUri(result.assets[0].uri); // local URI
-            setPfp(`data:pfp/jpeg;based64,${result.assets[0].base64}`);
+            // launching the gallery
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1], // force a perfect square crop
+                quality: 0.5,   // compress the image to save bandwidth
+                base64: true,   // encode as a string so we can easily send it via json
+            });
+
+            // saving the image to state
+            if (!result.canceled && result.assets[0].base64) {
+                setPfpUri(result.assets[0].uri); // local URI
+
+                // correctly formatted data URI scheme
+                const validDataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                setPfp(validDataUri);
+                setpfpBase64(validDataUri); // actually saves it for the backend payload
+            }
+        } catch (error) {
+            console.error("ImagePicker Error:", error);
+            Alert.alert("Error:", "Could not open the photo gallery!");
         }
     };
 
@@ -73,7 +93,7 @@ export default function SetupScreen() {
 
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
+            <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <View style={styles.container}>

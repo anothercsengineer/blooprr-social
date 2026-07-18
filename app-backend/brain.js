@@ -27,12 +27,19 @@ const rateLimit = require('express-rate-limit');
 app.use(helmet());
 // required if running behind a reverse proxy so rate limiter doesn't block everyone globally
 app.set('trust proxy', 1);
-const limiter = rateLimit({
+const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 200, // limit for app usage (scrolling, syncing, etc.)
     message: { error: 'Too many requests from this IP, please try again later.' }
 });
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10, // aggressive limit: maximum 10 auth attempts per ip
+    message: { error: 'Too many authentication attempts from this IP. You are temporarily locked out.' }
+});
 app.use('/api/', limiter);
+app.use('/api/auth/', authLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-    StyleSheet, Text, View, Image,
+    StyleSheet, Text, View, Image, BackHandler,
     TouchableOpacity, ActivityIndicator, Alert
 } from 'react-native';
 import { router, Stack } from 'expo-router';
@@ -11,6 +11,17 @@ import { BACKEND_URL } from '../constants/config';
 
 export default function SyncScreen() {
     const [isSyncing, setIsSyncing] = useState(false);
+
+    useEffect(() => {
+        const backAction = () => {
+            BackHandler.exitApp();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+        return () => backHandler.remove();
+    }, []);
 
     // hitting 'not now', sends them directly to home screen
     const handleSkip = () => {
@@ -39,18 +50,30 @@ export default function SyncScreen() {
                 data.forEach(contact => {
                     if (contact.phoneNumbers) {
                         contact.phoneNumbers.forEach(phone => {
-                            // stripping everything except raw digits
-                            const digits = phone.number?.replace(/[^0-9]/g, '');
-                            if (digits && digits.length >= 7) {
-                                rawNumbers.push(digits);
+                            let digits = phone.number?.replace(/[^0-9]/g, '');
+                            if (digits) {
+                                // strip Indian +91 country code
+                                if (digits.length === 12 && digits.startsWith('91')) {
+                                    digits = digits.substring(2);
+                                }
+                                // strip local 0 prefix
+                                else if (digits.length === 11 && digits.startsWith('0')) {
+                                    digits = digits.substring(1);
+                                }
+
+                                // only hash perfectly formatted 10-digit numbers
+                                if (digits.length === 10 && /^[6-9]/.test(digits)) {
+                                    rawNumbers.push(digits);
+                                }
                             }
                         });
                     }
                 });
 
-                // 4. hashing numbers locally
+                // 4. deduplicating and hashing numbers locally
+                const uniqueNumbers = Array.from(new Set(rawNumbers));
                 const hashedContacts = await Promise.all(
-                    rawNumbers.map(async (num) => {
+                    uniqueNumbers.map(async (num) => {
                         return await Crypto.digestStringAsync(
                             Crypto.CryptoDigestAlgorithm.SHA256,
                             num
@@ -84,14 +107,13 @@ export default function SyncScreen() {
         } catch (error) {
             console.error(error);
             Alert.alert("Network Error", "Could not connect to the blooprr servers!");
-        } finally {
             setIsSyncing(false);
         }
     };
 
     return (
         <>
-            <Stack.Screen options={{ headerShown: false }} />
+            <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <View style={styles.container}>
                 {/* logo on top */}
                 <View style={styles.header}>

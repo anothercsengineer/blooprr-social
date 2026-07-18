@@ -1,8 +1,23 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { useEffect } from 'react';
+import { 
+    StyleSheet, Text, View, Image,
+    TouchableOpacity, SafeAreaView,
+    Platform, StatusBar, BackHandler
+} from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+    useEffect(() => {
+        const backAction = () => {
+            BackHandler.exitApp();
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+        return () => backHandler.remove();
+    }, []);
     
     const handleInvite = () => {
         // we will implement native os sharing here later
@@ -11,7 +26,7 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <Stack.Screen options={{ headerShown: false }} />
+            <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <StatusBar barStyle="light-content" />
             
             <View style={styles.container}>

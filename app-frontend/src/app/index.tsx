@@ -1,11 +1,43 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  StyleSheet, Text, View,
+  TouchableOpacity, Image,
+  ActivityIndicator
+} from 'react-native';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 export default function OnboardingScreen() {
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('jwt');
+        if (token) {
+          router.replace('/home');
+        } else {
+          setIsChecking(false);
+        }
+      } catch (error) {
+        setIsChecking(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   const handleInitialize = () => {
     console.log("Initialize button pressed!");
     router.replace('/login');
   };
+
+  if (isChecking) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#00DCCA" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
