@@ -332,3 +332,19 @@
 - **[Frontend Routing]** Refactored `login.tsx` to utilize the new reconnaissance endpoint, safely routing returning users directly to the passcode screen via secure parameter injection.
 - **[Frontend Architecture]** Upgraded `passcode.tsx` into a complex, dual-purpose screen. Built dynamic UI logic that conditionally hides registration elements and modifies text states when detecting an `action === 'login'` parameter.
 - **[DevOps Hotfix]** Fixed a fatal crash on the contacts sync screen caused by an Expo SDK 52 deprecation warning escalating into a caught exception. Bypassed the crash by switching to the `expo-contacts/legacy` native import.
+
+---
+
+# *Chronological record of the v0.10.1-alpha patch update cycle*
+
+## Session 23: Exhaustive Security & Logic Audit
+*Goal: Resolve all logic bugs, memory leaks, and vulnerabilities identified in the comprehensive frontend and backend audit.*
+
+- **[Backend Architecture]** Overhauled `/api/contacts/sync` by implementing SQLite query chunking in `contacts.js`, bypassing the 999 max variable limit and allowing synchronization of up to 5,000 phonebook contacts simultaneously.
+- **[Backend Security]** Fortified `/login` and `/register` endpoints in `auth.js` by wrapping all asynchronous `bcrypt` operations in `try/catch` blocks, preventing unhandled promise rejections from crashing the Node.js event loop.
+- **[Backend Security]** Restructured `brain.js` global rate limiting. Split standard API requests into a generous pool while isolating authentication routes behind an aggressive, separate rate limiter (10 requests/15 minutes) to deter brute-force attacks.
+- **[Frontend Data Integrity]** Patched the profile picture pipeline in `setup.tsx`. Fixed malformed Data URI schemes (`pfp` -> `image`, `based64` -> `base64`) and ensured the parsed `pfpBase64` state successfully updates before dispatching the payload to the server.
+- **[Frontend Security]** Closed a severe navigation stack vulnerability in `passcode.tsx`. Blocked hardware and gesture back-navigation, and permanently nuked underlying screens from memory (`login` and `blipgate`) upon successful authentication using `router.dismissAll()`.
+- **[Frontend Performance]** Stripped extraneous `finally` blocks from authentication promises in `passcode.tsx` and `sync.tsx` to eliminate React "update on unmounted component" memory leak warnings.
+- **[Frontend Logic]** Aligned native contact extraction in `sync.tsx` to perfectly mirror backend expectations. Added Regex validation to automatically strip Indian country codes (`+91`) and local trunk prefixes (`0`), guaranteeing client-side hashes successfully match database records.
+- **[Frontend Security]** Upgraded custom passcode constraints in `passcode.tsx` to enforce true alphanumeric security using distinct character class Regex validation, blocking trivially weak inputs.
