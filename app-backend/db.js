@@ -84,7 +84,7 @@ db.serialize(() => {
             bloop_id INTEGER NOT NULL,
             profile_id INTEGER NOT NULL,
             type TEXT NOT NULL, -- 'like' or 'reply'
-            reply_text TEXT,
+            chats_text TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(bloop_id) REFERENCES bloops(id) ON DELETE CASCADE,
             FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE

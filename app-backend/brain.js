@@ -38,7 +38,7 @@ const authLimiter = rateLimit({
     max: 10, // aggressive limit: maximum 10 auth attempts per ip
     message: { error: 'Too many authentication attempts from this IP. You are temporarily locked out.' }
 });
-app.use('/api/', limiter);
+app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
 app.use(express.json({ limit: '10mb' }));

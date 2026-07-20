@@ -60,7 +60,7 @@ router.post('/sync', authenticateToken, (req, res) => {
     });
 
     // 2. finding mutual connections
-    db.get('SELECT phone_hash FROM profiles WHERE id = ?', [parsedProfileId], (err, user) => {
+    db.get('SELECT phone_hash FROM profiles WHERE id = ?', [parsedProfileId], async (err, user) => {
         if (err || !user) return res.status(500).json({ error: 'Could not fetch user profile' });
 
         const myPhoneHash = user.phone_hash;
@@ -107,7 +107,7 @@ router.post('/sync', authenticateToken, (req, res) => {
 
             db.serialize(() => {
                 db.run('BEGIN TRANSACTION');
-                mutualProfiles.forEach(mutual => {
+                allMutualProfiles.forEach(mutual => {
                     const id1 = Math.min(parsedProfileId, mutual.id);
                     const id2 = Math.max(parsedProfileId, mutual.id);
                                                                                         

@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { 
     StyleSheet, Text, View, Image,
-    TouchableOpacity, SafeAreaView,
-    Platform, StatusBar, BackHandler
+    TouchableOpacity, BackHandler,
+    Platform, StatusBar, FlatList
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import BloopCard from '../components/bloop-card';
+import { BlurView } from 'expo-blur';
 
 export default function HomeScreen() {
     useEffect(() => {
@@ -23,6 +26,53 @@ export default function HomeScreen() {
         // we will implement native os sharing here later
         console.log("Invite clicked");
     };
+
+    // temporary mock data to view the UI
+    const dummyBloops = [
+        {
+            id: '1',
+            username: 'random user',
+            profilePicUrl: 'https://i.pravatar.cc/100?img=11',
+            bloopImageUrl: 'https://images.unsplash.com/photo-1590490359683-658d3d23f972',
+            timeLeft: '7h',
+            likes: 125,
+            chats: 12,
+            relays: 3
+        },
+        {
+            id: '2',
+            username: 'another person',
+            profilePicUrl: 'https://i.pravatar.cc/100?img=33',
+            bloopImageUrl: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd',
+            timeLeft: '4h',
+            likes: 42,
+            chats: 5,
+            relays: 1
+        },
+        {
+            id: '3',
+            username: 'hello person',
+            profilePicUrl: 'https://i.pravatar.cc/100?img=33',
+            bloopImageUrl: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd',
+            timeLeft: '6h',
+            likes: 72,
+            chats: 59,
+            relays: 10
+        }
+    ];
+
+    const [focusedBloopId, setFocusedBloopId] = useState<string | null>(dummyBloops[0]?.id || null);
+
+    const viewabilityConfig = useRef({
+        itemVisiblePercentThreshold: 80, // bloop must be 80% on screen to be considered "focused"
+    }).current;
+
+    const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+        if (viewableItems && viewableItems.length > 0) {
+            // focus on the most visible bloop
+            setFocusedBloopId(viewableItems[0].item.id);
+        }
+    }).current;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -42,26 +92,65 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* empty feed */}
-                <View style={styles.feedContainer}>
-                    <Text style={styles.emptyTitle}>nobody here yet</Text>
-                    
-                    <Text style={styles.emptySubtitle}>
-                        blooprr only shows people{'\n'}already in your contacts.
-                    </Text>
-                    
-                    <TouchableOpacity 
-                        style={styles.inviteButton} 
-                        onPress={handleInvite} 
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.inviteText}>invite a friend</Text>
-                    </TouchableOpacity>
+                {/* feed area */}
+                {dummyBloops.length > 0 ? (
+                    <FlatList
+                        data={dummyBloops}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => {
+                            const isFocused = item.id === focusedBloopId;
+                            return (
+                                <View style={{ position: 'relative' }}>
+                                    <BloopCard
+                                        {...item}
+                                        isFocused={isFocused}
+                                    />
 
-                    <Text style={styles.emptyFooter}>
-                        invite a friend to get this started!
-                    </Text>
-                </View>
+                                    {/* subtle card blur overlay */}
+                                    {!isFocused && (
+                                        <View
+                                            style={[
+                                                StyleSheet.absoluteFill,
+                                                { borderRadius: 30, overflow: 'hidden', marginBottom: 25, zIndex: 10, elevation: 10 }
+                                            ]}
+                                            pointerEvents="none"
+                                        >
+                                            <BlurView
+                                                intensity={15}
+                                                tint="dark"
+                                                style={{ flex: 1 }}
+                                            />
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        }}
+                        contentContainerStyle={{ paddingHorizontal: 25, paddingTop: 10, paddingBottom: 20 }}
+                        showsVerticalScrollIndicator={false}
+                        viewabilityConfig={viewabilityConfig}
+                        onViewableItemsChanged={onViewableItemsChanged}
+                    />
+                ) : ( 
+                    <View style={styles.feedContainer}>
+                        <Text style={styles.emptyTitle}>nobody here yet</Text>
+                        
+                        <Text style={styles.emptySubtitle}>
+                            blooprr only shows people{'\n'}already in your contacts.
+                        </Text>
+                        
+                        <TouchableOpacity 
+                            style={styles.inviteButton} 
+                            onPress={handleInvite} 
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.inviteText}>invite a friend</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.emptyFooter}>
+                            invite a friend to get this started!
+                        </Text>
+                    </View>
+                )}
 
                 {/* custom navigation bar */}
                 <View style={styles.bottomNav}>
@@ -93,7 +182,6 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#011110',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     container: {
         flex: 1,
