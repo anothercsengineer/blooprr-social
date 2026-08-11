@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import BloopCard from '../components/bloop-card';
-import { BlurView } from 'expo-blur';
 
 export default function HomeScreen() {
     useEffect(() => {
@@ -61,7 +60,16 @@ export default function HomeScreen() {
         }
     ];
 
-    const [focusedBloopId, setFocusedBloopId] = useState<string | null>(dummyBloops[0]?.id || null);
+    const loopedBloops = Array(100).fill(dummyBloops).flat().map((bloop, index) => ({
+        ...bloop,
+        uniqueId: `${bloop.id}-${index}`
+    }));
+
+    const flatListRef = useRef<FlatList>(null);
+
+    const startIndex = Math.floor(loopedBloops.length / 2);
+
+    const [focusedBloopId, setFocusedBloopId] = useState<string | null>(loopedBloops[startIndex]?.uniqueId || null);
 
     const viewabilityConfig = useRef({
         itemVisiblePercentThreshold: 80, // bloop must be 80% on screen to be considered "focused"
@@ -70,9 +78,15 @@ export default function HomeScreen() {
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems && viewableItems.length > 0) {
             // focus on the most visible bloop
-            setFocusedBloopId(viewableItems[0].item.id);
+            setFocusedBloopId(viewableItems[0].item.uniqueId);
         }
     }).current;
+
+    const getItemLayout = (data: any, index: number) => ({
+        length: 525,
+        offset: 525 * index,
+        index,
+    });
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -95,10 +109,22 @@ export default function HomeScreen() {
                 {/* feed area */}
                 {dummyBloops.length > 0 ? (
                     <FlatList
-                        data={dummyBloops}
-                        keyExtractor={(item) => item.id}
+                        ref={flatListRef}
+                        data={loopedBloops}
+                        keyExtractor={(item) => item.uniqueId}
+                        onLayout={() => {
+                            flatListRef.current?.scrollToIndex({
+                                index: startIndex,
+                                animated: false,
+                                viewPosition: 0.5
+                            });
+                        }}
+                        getItemLayout={getItemLayout}
+                        snapToAlignment="center"
+                        snapToInterval={525}
+                        decelerationRate="fast"
                         renderItem={({ item }) => {
-                            const isFocused = item.id === focusedBloopId;
+                            const isFocused = item.uniqueId === focusedBloopId;
                             return (
                                 <View style={{ position: 'relative' }}>
                                     <BloopCard
@@ -106,22 +132,6 @@ export default function HomeScreen() {
                                         isFocused={isFocused}
                                     />
 
-                                    {/* subtle card blur overlay */}
-                                    {!isFocused && (
-                                        <View
-                                            style={[
-                                                StyleSheet.absoluteFill,
-                                                { borderRadius: 30, overflow: 'hidden', marginBottom: 25, zIndex: 10, elevation: 10 }
-                                            ]}
-                                            pointerEvents="none"
-                                        >
-                                            <BlurView
-                                                intensity={15}
-                                                tint="dark"
-                                                style={{ flex: 1 }}
-                                            />
-                                        </View>
-                                    )}
                                 </View>
                             );
                         }}

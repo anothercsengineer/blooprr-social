@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // TO DO: map this interface directly to backend DB schema 
 interface BloopCardProps {
@@ -43,7 +44,31 @@ export default function BloopCard({
 
     return (
         <View style={[styles.cardContainer, { borderColor: isFocused ? '#00DCCA' : '#002B27' }]}>
-            {/* 1. header strip */}
+
+            {/* 1. content image (in bg) */}
+            <Image
+                source={{ uri: bloopImageUrl }}
+                style={styles.bloopImage}
+                resizeMode="cover"
+            />
+            {/* dark tint overlay for unfocused images */}
+            {!isFocused && <View style={styles.darkTintOverlay} />}
+
+            {/* top vignette */}
+            <LinearGradient
+                colors={['#011110E6', '#01111000']}
+                style={styles.topGradient}
+                pointerEvents="none"
+            />
+
+            {/* bottom vignette */}
+            <LinearGradient
+                colors={['#01111000', '#011110E6']}
+                style={styles.bottomGradient}
+                pointerEvents="none"
+            />
+
+            {/* 2. header strip */}
             <View style={styles.header}>
                 <View style={[styles.userInfo, { opacity: isFocused ? 1 : 0.4 }]}>
                     <Image source={{ uri: profilePicUrl }} style={styles.profilePic} />
@@ -57,16 +82,7 @@ export default function BloopCard({
                 </View>
             </View>
 
-            {/* 2. content image */}
-            <View style={styles.imageWrapper}>
-                <Image
-                    source={{ uri: bloopImageUrl }}
-                    style={styles.bloopImage}
-                    resizeMode="cover"
-                />
-                {/* dark tint overlay for unfocused images */}
-                {!isFocused && <View style={styles.darkTintOverlay} />}
-            </View>
+            <View style={{ flex: 1 }} /> 
 
             {/* 3. footer strip */}
             <View style={styles.footer}>
@@ -92,18 +108,20 @@ export default function BloopCard({
 const styles = StyleSheet.create({
     cardContainer: {
         width: '100%',
-        backgroundColor: '#001817', // in slight contrast to background
-        borderWidth: 1.5,
+        height: 500,
+        backgroundColor: '#001817',
+        borderWidth: 0.5,
         borderRadius: 30,
-        padding: 15,
         marginBottom: 25,
+        justifyContent: 'space-between',
+        overflow: 'hidden',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
-        paddingHorizontal: 5,
+        paddingTop: 15,
+        paddingHorizontal: 15,
     },
     userInfo: {
         flexDirection: 'row',
@@ -140,14 +158,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'CalSans',
     },
-    imageWrapper: {
-        width: '100%',
-        height: 250,
-        borderRadius: 20,
-        marginBottom: 15,
-        overflow: 'hidden',
-    },
     bloopImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         width: '100%',
         height: '100%',
     },
@@ -159,11 +175,26 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'rgba(0, 15, 14, 0.75)',
     },
+    topGradient: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 120,
+    },
+    bottomGradient: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 150,
+    },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingHorizontal: 10,
+        paddingBottom: 15,
+        paddingHorizontal: 15,
     },
     actionButton: {
         flexDirection: 'row',
